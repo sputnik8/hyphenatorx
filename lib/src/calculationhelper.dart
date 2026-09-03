@@ -1,62 +1,45 @@
-import 'dart:developer';
-
-import 'package:flutter/foundation.dart';
-
-import 'pattern.dart';
+import '../languages/languageconfig.dart';
 
 class CalculationHelper {
   final _startEndMarker = '.';
-  final List<Pattern> _patterns;
+  final Map<String, List<int>> _patterns;
   final Map<String, List<int>> _exceptions;
   final int _minLetterCount;
   final int _minWordLength;
   final String symbol;
   final String hyphen;
+
   final Map<String, String> cacheHyphendWords = {};
   final Map<String, String> cacheNonHyphendWords = {};
   final Map<String, List<String>> cacheHyphenateSyllables = {};
   final Map<String, List<String>> cacheNonHyphenateSyllables = {};
 
-  // final Map<String, List<int>> _cacheGenerateLevelsForWord = {};
-  // final Map<String, List<int>> _cacheHyphenatedMaskFromLevels = {};
-  // final Map<String, List<int>> _cacheCorrectHyphenationMask = {};
+  /// Upper bound per cache. Cleared when reached to avoid
+  /// unbounded memory growth in long-running apps.
+  static const int maxCacheSize = 10000;
 
-  CalculationHelper(this._patterns, this._exceptions, this._minLetterCount,
-      this._minWordLength, this.symbol, this.hyphen);
+  CalculationHelper(LanguageConfig config, this._minLetterCount,
+      this._minWordLength, this.symbol, this.hyphen)
+      : _patterns = _parsePatterns(config.patterns),
+        _exceptions = _parseExceptions(config.exceptions);
 
-  void logCache() {
-    if (kDebugMode) {
-      log("cacheHyphendWords: ${cacheHyphendWords.entries.length}");
-    }
-  }
+  String hyphenate(final String word) =>
+      _hyphenateByMask(word, _generateHyphenationMask(word));
 
-  String hyphenate(final String word) {
-    List<int> hyphenationMask = _generateHyphenationMask(word);
-    return _hyphenateByMask(word, hyphenationMask);
-  }
+  List<String> syllables(final String word) => hyphenate(word).split(symbol);
 
-  List<String> syllables(final String word) {
-    return hyphenate(word).split(symbol);
-  }
+  bool isNotNeedHyphenate(final String input) => input.length < _minWordLength;
 
   // -------------------------------------------------------------------------
   // Generate mask
   // -------------------------------------------------------------------------
 
   List<int> _generateHyphenationMask(final String word) {
-    List<int> hyphenationMask;
+    final exception = _exceptions[word.toLowerCase()];
+    if (exception != null) return exception;
 
-    final wordForLookup = word.toLowerCase();
-
-    if (_exceptions.containsKey(wordForLookup))
-      hyphenationMask = _exceptions[wordForLookup]!;
-    else {
-      final levels = _generateLevelsForWord(wordForLookup);
-      hyphenationMask = _hyphenatedMaskFromLevels(levels);
-      hyphenationMask = _correctHyphenationMask(hyphenationMask);
-    }
-
-    return hyphenationMask;
+    final levels = _generateLevelsForWord(word.toLowerCase());
+    return _correctHyphenationMask(_hyphenatedMaskFromLevels(levels));
   }
 
   // -------------------------------------------------------------------------
@@ -80,76 +63,47 @@ class CalculationHelper {
   // Generate levels
   // -------------------------------------------------------------------------
 
+  /// Exact-match lookup over a [Map]: every substring of the padded word
+  /// is probed with O(1) access, replacing the previous sorted-list scan.
   List<int> _generateLevelsForWord(final String word) {
-    // if (_cacheGenerateLevelsForWord.containsKey(word)) {
-    //   return _cacheGenerateLevelsForWord[word]!;
-    // }
-
     final wordString = '$_startEndMarker$word$_startEndMarker';
 
-    final levels = List.filled(wordString.length, 0, growable: false);
+    final levels = List<int>.filled(wordString.length, 0, growable: false);
 
     for (int i = 0; i < wordString.length - 2; ++i) {
-      int patternIndex = 0;
-
       for (int count = 1; count <= wordString.length - i; ++count) {
-        var patternFromWord =
-            Pattern.patternOnly(wordString.substring(i, i + count));
+        final pattern = _patterns[wordString.substring(i, i + count)];
+        if (pattern == null) continue;
 
-        if (patternFromWord.compareTo(_patterns[patternIndex]) < 0) continue;
+        for (int levelIndex = 0;
+            levelIndex < pattern.length - 1;
+            ++levelIndex) {
+          final int level = pattern[levelIndex];
 
-        patternIndex = _patterns.indexWhere(
-            (pattern) => pattern.compareTo(patternFromWord) > 0, patternIndex);
-
-        if (patternIndex == -1) {
-          break;
-        }
-
-        if (patternFromWord.compareTo(_patterns[patternIndex]) >= 0)
-          for (int levelIndex = 0;
-              levelIndex < _patterns[patternIndex].levelsCount - 1;
-              ++levelIndex) {
-            final int level = _patterns[patternIndex].levelByIndex(levelIndex);
-
-            if (level > levels[i + levelIndex]) {
-              levels[i + levelIndex] = level;
-            }
+          if (level > levels[i + levelIndex]) {
+            levels[i + levelIndex] = level;
           }
+        }
       }
     }
-
-    // _cacheGenerateLevelsForWord[word] = levels;
 
     return levels;
   }
 
   List<int> _hyphenatedMaskFromLevels(final List<int> levels) {
-    // final key = levels.toString();
-    // if (_cacheHyphenatedMaskFromLevels.containsKey(key)) {
-    //   return _cacheHyphenatedMaskFromLevels[key]!;
-    // }
-
     final int length = levels.length - 2;
 
     final hyphenationMask = List<int>.filled(length, 0, growable: false);
-    // hyphenationMask[0] = 0;
 
     for (int i = 1; i < length; i++) {
       if (levels[i + 1] % 2 != 0) hyphenationMask[i] = 1;
     }
 
-    // _cacheHyphenatedMaskFromLevels[key] = hyphenationMask;
-
     return hyphenationMask;
   }
 
-  /// Well returns the modified list itself.
+  /// Returns the modified list itself.
   List<int> _correctHyphenationMask(final List<int> mask) {
-    // final key = mask.toString();
-    // if (_cacheCorrectHyphenationMask.containsKey(key)) {
-    //   return _cacheCorrectHyphenationMask[key]!;
-    // }
-
     if (mask.length > _minLetterCount) {
       for (int i = 0; i < _minLetterCount; i++) {
         mask[i] = 0;
@@ -166,10 +120,70 @@ class CalculationHelper {
       }
     }
 
-    // _cacheCorrectHyphenationMask[key] = mask;
-
     return mask;
   }
 
-  bool isNotNeedHyphenate(final String input) => input.length < _minWordLength;
+  // -------------------------------------------------------------------------
+  // TeX notation parsers
+  // -------------------------------------------------------------------------
+
+  /// Parses patterns like `.аб3р`: digits are the inter-letter levels,
+  /// letters and dots form the matched string. A missing leading or
+  /// trailing digit means level 0, therefore
+  /// `levels.length == result.length + 1`.
+  static Map<String, List<int>> _parsePatterns(Iterable<String> sources) {
+    final map = <String, List<int>>{};
+
+    for (final source in sources) {
+      final levels = <int>[];
+      final result = StringBuffer();
+
+      var expectLevel = true;
+      for (final rune in source.runes) {
+        final digit = rune - 0x30;
+        if (digit >= 0 && digit <= 9) {
+          levels.add(digit);
+          expectLevel = false;
+        } else {
+          if (expectLevel) levels.add(0);
+          result.writeCharCode(rune);
+          expectLevel = true;
+        }
+      }
+      if (expectLevel) levels.add(0);
+
+      map[result.toString()] = List.unmodifiable(levels);
+    }
+
+    return map;
+  }
+
+  /// Parses exceptions like `во-жд`: a `-` marks a break point before
+  /// the letter following it. The resulting mask contains one entry per
+  /// letter plus one trailing entry, thus
+  /// `mask.length == key.length + 1`.
+  static Map<String, List<int>> _parseExceptions(Iterable<String> sources) {
+    final map = <String, List<int>>{};
+
+    for (final source in sources) {
+      final mask = <int>[];
+      final key = StringBuffer();
+
+      var breakBeforeNext = false;
+      for (final rune in source.runes) {
+        if (rune == 0x2D) {
+          breakBeforeNext = true;
+        } else {
+          key.writeCharCode(rune);
+          mask.add(breakBeforeNext ? 1 : 0);
+          breakBeforeNext = false;
+        }
+      }
+      mask.add(0);
+
+      map[key.toString()] = List.unmodifiable(mask);
+    }
+
+    return map;
+  }
 }

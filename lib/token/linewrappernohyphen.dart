@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:hyphenatorx/src/token/texthelper.dart';
 
-import '../src/token/tokeniterator.dart';
 import 'tokens.dart';
 import 'wrapresult.dart';
 
@@ -12,15 +11,14 @@ class LineWrapperNoHyphen {
   final List<List<TextPartToken>> _lines = [];
   late final TextPainter _painter;
   final TextStyle _style;
-  // double maxSyllableWidth = 0;
-  late final TokenIterator _tokenIter;
   final Text _text;
+  final List<TextPartToken> _tokens;
 
   /// Constructor.
   LineWrapperNoHyphen(
-      List<TextPartToken> tokens, this._text, this._style, this._maxWidth) {
+      List<TextPartToken> tokens, this._text, this._style, this._maxWidth)
+      : _tokens = tokens {
     final Map<String, Size> tokensWidthCache = {};
-    _tokenIter = TokenIterator(tokens);
 
     _painter = TextPainter(
       textDirection: _text.textDirection ?? TextDirection.ltr,
@@ -45,8 +43,6 @@ class LineWrapperNoHyphen {
         part.sizeCurrent = part.sizeHyphen;
       }
     }
-
-    // print('=== CACHE: ${tokensWidthCache}');
   }
 
   /// Sets the widths of the token with respect to hyphend and not-hyphened.
@@ -58,74 +54,56 @@ class LineWrapperNoHyphen {
       tokensWidthCache[syllable] = _painter.size;
     }
 
-    final Size sizeNoHyphen = tokensWidthCache[syllable]!;
-    token.sizeNoHyphen = sizeNoHyphen;
-    token.sizeCurrent = sizeNoHyphen;
+    token.sizeNoHyphen = tokensWidthCache[syllable]!;
+    token.sizeCurrent = token.sizeNoHyphen;
   }
 
-  /// Returns the resulting String without hyphens and but linebreaks.
+  /// Returns the resulting String without hyphens but with linebreaks.
   WrapResult render() {
-    if (_tokenIter.isEmpty()) {
+    if (_tokens.isEmpty) {
       return WrapResult(_text, _style, _maxWidth, Size(0, 0), _lines);
     }
 
     final List<TextPartToken> line = [];
 
-    while (true) {
-      var token = _tokenIter.current();
-
+    for (final token in _tokens) {
       // ------------------------------------------------------------
       // NEWLINE
       // ------------------------------------------------------------
       if (token is NewlineToken) {
         _lines.add(_cloneLineAndAddNewline(line));
         line.clear();
-      } else
+      }
       // ------------------------------------------------------------
       // TABS AND SPACES
       // ------------------------------------------------------------
-      if (token is TabsAndSpacesToken && line.isNotEmpty) {
-        if (_canAddNoHyphen([token], line)) {
+      else if (token is TabsAndSpacesToken && line.isNotEmpty) {
+        if (_fits([token], line)) {
           line.add(token);
         } else {
           _lines.add(_cloneLineAndAddNewline(line));
           line.clear();
         }
-      } else
+      }
       // ------------------------------------------------------------
       // WORD
       // ------------------------------------------------------------
-      if (token is WordToken) {
-        // print('ADING WORD TO LINE: $token');
-        bool trySuccess = _tryAddWordToLine(token, line);
-
-        if (trySuccess == false) {
+      else if (token is WordToken) {
+        if (!_tryAddWordToLine(token, line)) {
           if (line.isNotEmpty) {
             _lines.add(_cloneLineAndAddNewline(line));
             line.clear();
           }
-          trySuccess = _tryAddWordToLine(token, line);
-          // print('ADING WORD TO EMPTY LINE: $token | $trySuccess | $line');
 
-          if (trySuccess == false) {
+          if (!_tryAddWordToLine(token, line)) {
             if (line.isNotEmpty) {
               _lines.add(_cloneLineAndAddNewline(line));
               line.clear();
             }
-            // print('ADING WORD TO NEW EMPTY LINE -- FORCED: $token');
+            // Forced: word does not fit a full line at all.
             line.add(token);
           }
         }
-      }
-
-      // ------------------------------------------------------------
-      // NEXT TOKEN
-      // ------------------------------------------------------------
-
-      if (_tokenIter.hasNext()) {
-        _tokenIter.next();
-      } else {
-        break;
       }
     }
 
@@ -137,28 +115,18 @@ class LineWrapperNoHyphen {
       return WrapResult(_text, _style, _maxWidth, Size(0, 0), _lines);
     }
 
-    final str =
-        _lines.map<String>((line) => line.map((e) => e.render()).join()).join();
+    final str = _lines
+        .map<String>((line) => line.map((e) => e.render()).join())
+        .join();
     _painter.text = TextSpan(text: str, style: _style);
     _painter.layout();
 
-    final wrap = WrapResult(
+    return WrapResult(
         TextHelper.clone(_text, str), _style, _maxWidth, _painter.size, _lines);
-
-    // print(_lines);
-
-    // if (kDebugMode) {
-    // print('RENDERED lines   paint:\n${wrap.debugSizeOfLines}');
-    // print('RENDERED string  paint:\n$str');
-    // print('RENDERED size by paint: ${_painter.size}');
-    // print('RENDERED size by token: ${wrap.debugSizeByText}');
-    // print('RENDERED      maxWidth: ${wrap.maxWidth}');
-    // }
-    return wrap;
   }
 
   bool _tryAddWordToLine(WordToken token, List<TextPartToken> line) {
-    if (_canAddNoHyphen(token.parts, line)) {
+    if (_fits(token.parts, line)) {
       line.addAll(token.parts);
       return true;
     }
@@ -174,8 +142,7 @@ class LineWrapperNoHyphen {
     return clone;
   }
 
-  bool _canAddNoHyphen(
-      final List<TextPartToken> tokens, List<TextPartToken> line) {
+  bool _fits(final List<TextPartToken> tokens, List<TextPartToken> line) {
     double w = line.fold<double>(0, (sum, item) {
       return sum + item.sizeCurrent!.width;
     });

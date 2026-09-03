@@ -591,9 +591,8 @@ class LetterUtil {
     "|",
     "@",
     "#",
-    r"\$",
-    "%",
-    "&",
+    "\$",
+    "%",    "&",
     "*",
     "+",
     "=",
@@ -627,27 +626,12 @@ class LetterUtil {
     additionalLetters,
   ]);
 
+  static final Set<String> _letterSet = Set<String>.from(letters);
+  static final Set<String> _punctuationSet = Set<String>.from(punctuation);
+
   static bool isLetter(String input) {
-    if (punctuation.contains(input)) {
-      return false;
-    }
-
-    int start = 0;
-    int end = letters.length - 1;
-
-    while (start <= end) {
-      int mid = start + ((end - start) ~/ 2);
-      int comparison = input.compareTo(letters[mid]);
-
-      if (comparison == 0) {
-        return true;
-      } else if (comparison < 0) {
-        end = mid - 1;
-      } else {
-        start = mid + 1;
-      }
-    }
-
-    return false;
+    return input.length == 1 &&
+        !_punctuationSet.contains(input) &&
+        _letterSet.contains(input);
   }
 }

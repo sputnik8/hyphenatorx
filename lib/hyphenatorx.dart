@@ -1,80 +1,75 @@
-import 'dart:core';
-
 import 'package:flutter/material.dart';
 import 'package:hyphenatorx/src/extensions.dart';
 
+import 'languages/language_ru.dart';
 import 'languages/languageconfig.dart';
 import 'src/calculationhelper.dart';
 import 'src/letterutil.dart';
-import 'src/pattern.dart';
 import 'token/linewrapperhyphen.dart';
 import 'token/linewrappernohyphen.dart';
 import 'token/tokens.dart';
 import 'token/wrapresult.dart';
 
+export 'languages/languageconfig.dart';
+export 'languages/language_ru.dart';
+export 'token/tokens.dart';
+export 'token/wrapresult.dart';
+
 /// Wrapper class hyphenating text.
+///
+/// Fully synchronous: the pattern data is compiled into the package
+/// as Dart constants (see [LanguageConfig]). No asset loading involved.
 class Hyphenator {
   late final CalculationHelper calc;
+
   static final RegExp _reBoundaries = RegExp(r'[\t\ ]+');
   static final RegExp _split = RegExp(r'\n|[\t ]+');
+  static final RegExp _reCarriageReturn = RegExp(r'\r');
 
-  static Language getLanguageEnum(String lang) {
-    Language l;
-    final name = 'language_' + lang;
-    try {
-      l = Language.values.firstWhere((l) => l.name == name);
-    } catch (e) {
-      throw 'Language not found: $lang ($name). Try: ${languageAbbr()}';
-    }
-    return l;
-  }
+  /// Instantiates a Hyphenator for Russian, using the bundled patterns.
+  factory Hyphenator.ru({
+    final String symbol = '\u{00AD}',
+    final String hyphen = '-',
+    final int minWordLength = 5,
+    final int minLetterCount = 3,
+  }) =>
+      Hyphenator(
+        const LanguageRu(),
+        symbol: symbol,
+        hyphen: hyphen,
+        minWordLength: minWordLength,
+        minLetterCount: minLetterCount,
+      );
 
-  /// Returns abbreviations of available languages.
-  static List<String> languageAbbr() =>
-      Language.values.map((e) => e.name.substring(9)).toList();
-
-  /// Instantiates a Hyphenator with a given language
-  /// configuration from JSON.
+  /// Instantiates a Hyphenator by language abbreviation, e.g. `ru`.
   ///
-  /// `lang` follows the format `en_us` or `de_1996`.
-  /// Throws if language is not found. Check  enum [Language] for
-  /// complete list.
-  static Future<Hyphenator> loadAsyncByAbbr(
-    final String lang, {
+  /// Throws [ArgumentError] if the language is not available.
+  /// Additional languages can be generated with `tool/tex2data.dart` -
+  /// see README.
+  factory Hyphenator.byAbbr(
+    final String abbr, {
     final String symbol = '\u{00AD}',
     final String hyphen = '-',
     final int minWordLength = 5,
     final int minLetterCount = 3,
-  }) async {
-    return Hyphenator(
-      await LanguageConfig.load(getLanguageEnum(lang)),
-      symbol: symbol,
-      hyphen: hyphen,
-      minWordLength: minWordLength,
-      minLetterCount: minLetterCount,
-    );
+  }) {
+    switch (abbr) {
+      case 'ru':
+        return Hyphenator.ru(
+          symbol: symbol,
+          hyphen: hyphen,
+          minWordLength: minWordLength,
+          minLetterCount: minLetterCount,
+        );
+      default:
+        throw ArgumentError(
+            'Unsupported language "$abbr". Available: ["ru"]. '
+            'Additional languages can be generated with tool/tex2data.dart '
+            '- see README.');
+    }
   }
 
-  /// Instantiates a Hyphenator with a given language
-  /// configuration from JSON.
-  static Future<Hyphenator> loadAsync(
-    final Language lang, {
-    final String symbol = '\u{00AD}',
-    final String hyphen = '-',
-    final int minWordLength = 5,
-    final int minLetterCount = 3,
-  }) async {
-    return Hyphenator(
-      await LanguageConfig.load(lang),
-      symbol: symbol,
-      hyphen: hyphen,
-      minWordLength: minWordLength,
-      minLetterCount: minLetterCount,
-    );
-  }
-
-  /// Instantiates a Hyphenator with a given language
-  /// configuration from Dart object.
+  /// Instantiates a Hyphenator with a given [LanguageConfig].
   Hyphenator(
     final LanguageConfig config, {
     final String symbol = '\u{00AD}',
@@ -83,35 +78,16 @@ class Hyphenator {
     final int minLetterCount = 3,
   }) {
     if (minWordLength <= 0) {
-      throw 'minWordLength must be > 0';
+      throw ArgumentError.value(minWordLength, 'minWordLength', 'must be > 0');
     }
 
-    final patterns = config.data['pattern']
-        .map<Pattern>((pattern) => Pattern(
-            pattern['result'] as String, List<int>.from(pattern['levels'])))
-        .toList()
-      ..sort();
-
-    final Map<String, List<int>> exceptions = {};
-
-    // exceptions.addEntries(
-    //   (config.data['exception'] as Map<String, dynamic>)
-    //       .entries
-    //       .map((entry) => MapEntry(entry.key, List<int>.from(entry.value))),
-    // );
-
-    /// https://github.com/xErik/hyphenatorx/issues/4
-    if (config.data['exception'] is Map &&
-        (config.data['exception'] as Map).isNotEmpty) {
-      exceptions.addEntries(
-        (config.data['exception'] as Map<String, dynamic>)
-            .entries
-            .map((entry) => MapEntry(entry.key, List<int>.from(entry.value))),
-      );
+    if (minLetterCount < 0) {
+      throw ArgumentError.value(
+          minLetterCount, 'minLetterCount', 'must be >= 0');
     }
 
     calc = CalculationHelper(
-        patterns, exceptions, minLetterCount, minWordLength, symbol, hyphen);
+        config, minLetterCount, minWordLength, symbol, hyphen);
   }
 
   /// Returns cached and hyphenated words.
@@ -124,7 +100,8 @@ class Hyphenator {
   /// Wraps the [text] with respect to the given [style] and [maxWidth].
   ///
   /// [WrapResult] holds a [Text] with the correctly hyphened [String].
-  WrapResult wrap(final Text text, final TextStyle style, final maxWidth) {
+  WrapResult wrap(
+      final Text text, final TextStyle style, final double maxWidth) {
     final tokens = hyphenateTextToTokens(text.data!);
     final wrapper =
         LineWrapperHyphen(tokens, text, style, maxWidth, calc.hyphen);
@@ -137,11 +114,11 @@ class Hyphenator {
     final List<TextPartToken> tokens = [];
 
     final List<String> parts =
-        text.data!.replaceAll(reR, '').splitWithDelim(_split);
+        text.data!.replaceAll(_reCarriageReturn, '').splitWithDelim(_split);
 
     for (final part in parts) {
       if (part.isEmpty) {
-        // hu?!
+        // Skip empty parts between matches.
       } else if (part == '\n') {
         tokens.add(NewlineToken());
       } else if (part.trim().isEmpty) {
@@ -150,40 +127,39 @@ class Hyphenator {
         tokens.add(WordToken([WordPartToken(part)]));
       }
     }
-    // print(tokens);
+
     final wrapper = LineWrapperNoHyphen(tokens, text, style, maxWidth);
     return wrapper.render();
   }
 
   /// Hyphenates a text and returns this text broken down into a tree.
-  /// Each node being a potential candidate for leding and triling hyphenation.
+  /// Each node being a potential candidate for leading and trailing
+  /// hyphenation.
   ///
   /// WordPartToken is not only a pure syllable, but includes directly
   /// leading or trailing other symbols like punctuation.
   ///
   /// Returns a tree:
   ///
-  /// TextTokens
-  ///   - WordToken (many syllables)
-  ///     - WordPartToken (syllables and surrounding symbols)
-  ///   - TabsAndSpacesToken
-  ///   - NewlineToken
+  ///     WordToken (many syllables)
+  ///       - WordPartToken (syllables and surrounding symbols)
+  ///     TabsAndSpacesToken
+  ///     NewlineToken
   ///
   /// The actual result looks like this, WS meaning Whitespace and NL Newline:
   ///
-  /// [[The], WS, [arts], WS, [are], WS, [a], NL, [vast], WS, [sub, di, vi, sion], WS]
-  ///
-  static final reR = RegExp(r'\r');
+  ///     [[The], WS, [arts], WS, [are], WS, [a], NL, [vast], WS, [sub, di, vi, sion], WS]
   List<TextPartToken> hyphenateTextToTokens(final String text) {
     final List<TextPartToken> tokens = [];
 
     final String hyph = hyphenateText(text); // this is expensive
 
-    final List<String> parts = hyph.replaceAll(reR, '').splitWithDelim(_split);
+    final List<String> parts =
+        hyph.replaceAll(_reCarriageReturn, '').splitWithDelim(_split);
 
     for (final part in parts) {
       if (part.isEmpty) {
-        // hu?!
+        // Skip empty parts between matches.
       } else if (part == '\n') {
         tokens.add(NewlineToken());
       } else if (part.trim().isEmpty) {
@@ -204,36 +180,21 @@ class Hyphenator {
   ///
   /// The hyphen symbol will be placed inside words only.
   ///
-  /// Setting `hyphenAtBoundaries: false` will add additional
-  /// hyphens at the outer word boundaries, including punctutation etc.
-  ///
-  /// @TODO rewrite this into a proper parser?
-  String hyphenateText(final String text, {hyphenAtBoundaries = false}) {
+  /// Setting `hyphenAtBoundaries: true` will add additional hyphens at
+  /// the outer word boundaries, including punctuation etc.
+  String hyphenateText(final String text, {bool hyphenAtBoundaries = false}) {
     final currentWord = StringBuffer();
     final result = StringBuffer();
-    final textUpper = text.toUpperCase();
-    final textLower = text.toLowerCase();
-    final len = text.length;
 
-    for (int i = 0; i < len; i++) {
-      final c = text[i];
-
-      // FORMER
-      //
-      // final isLetter = (c == c.toLowerCase() && c == c.toUpperCase()) == false;
-      //
-      // GOOD
-      //
-      bool isLetter = LetterUtil.isLetter(c) || textLower[i] != textUpper[i];
-      //
-      // SO SO
-      //
-      // final isLetter = reLetter.hasMatch(c);
+    for (final rune in text.runes) {
+      final c = String.fromCharCode(rune);
+      final isLetter =
+          LetterUtil.isLetter(c) || c.toUpperCase() != c.toLowerCase();
 
       if (isLetter) {
         currentWord.write(c);
       } else {
-        if (currentWord.length > 0) {
+        if (currentWord.isNotEmpty) {
           result.write(hyphenateWord(currentWord.toString()));
           currentWord.clear();
         }
@@ -241,31 +202,38 @@ class Hyphenator {
         result.write(c);
       }
     }
-    result.write(hyphenateWord(currentWord.toString()));
 
-    // calc.logCache();
-
-    if (hyphenAtBoundaries == false) {
-      return result.toString();
-    } else {
-      // Lazy method to add a hyphen symbol to word boundaries,
-      // including punctuation etc. following or preceeding a syllable.
-      return result.toString().splitWithDelim(_reBoundaries).join(calc.symbol);
+    if (currentWord.isNotEmpty) {
+      result.write(hyphenateWord(currentWord.toString()));
     }
+
+    if (!hyphenAtBoundaries) {
+      return result.toString();
+    }
+
+    // Lazy method to add a hyphen symbol to word boundaries,
+    // including punctuation etc. following or preceding a syllable.
+    return result.toString().splitWithDelim(_reBoundaries).join(calc.symbol);
   }
 
   /// Hyphenates a single word.
   String hyphenateWord(final String word) {
     if (calc.isNotNeedHyphenate(word)) return word;
 
-    if (calc.cacheHyphendWords.containsKey(word)) {
-      return calc.cacheHyphendWords[word]!;
-    }
-    if (calc.cacheNonHyphendWords.containsKey(word)) {
-      return calc.cacheNonHyphendWords[word]!;
-    }
+    final cachedHyphened = calc.cacheHyphendWords[word];
+    if (cachedHyphened != null) return cachedHyphened;
+
+    final cachedNonHyphened = calc.cacheNonHyphendWords[word];
+    if (cachedNonHyphened != null) return cachedNonHyphened;
 
     final result = calc.hyphenate(word);
+
+    if (calc.cacheHyphendWords.length >= CalculationHelper.maxCacheSize) {
+      calc.cacheHyphendWords.clear();
+    }
+    if (calc.cacheNonHyphendWords.length >= CalculationHelper.maxCacheSize) {
+      calc.cacheNonHyphendWords.clear();
+    }
 
     if (result == word) {
       calc.cacheNonHyphendWords[word] = result;
@@ -279,15 +247,21 @@ class Hyphenator {
   List<String> syllablesWord(final String word) {
     if (calc.isNotNeedHyphenate(word)) return <String>[word];
 
-    if (calc.cacheHyphenateSyllables.containsKey(word)) {
-      return calc.cacheHyphenateSyllables[word]!;
-    }
+    final cachedHyphened = calc.cacheHyphenateSyllables[word];
+    if (cachedHyphened != null) return cachedHyphened;
 
-    if (calc.cacheNonHyphenateSyllables.containsKey(word)) {
-      return calc.cacheNonHyphenateSyllables[word]!;
-    }
+    final cachedNonHyphened = calc.cacheNonHyphenateSyllables[word];
+    if (cachedNonHyphened != null) return cachedNonHyphened;
 
     final result = calc.syllables(word);
+
+    if (calc.cacheHyphenateSyllables.length >= CalculationHelper.maxCacheSize) {
+      calc.cacheHyphenateSyllables.clear();
+    }
+    if (calc.cacheNonHyphenateSyllables.length >=
+        CalculationHelper.maxCacheSize) {
+      calc.cacheNonHyphenateSyllables.clear();
+    }
 
     if (result.length == 1) {
       calc.cacheNonHyphenateSyllables[word] = result;

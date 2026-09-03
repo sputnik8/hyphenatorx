@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
+import 'package:hyphenatorx/token/wrapresult.dart';
 
+/// Text widget hyphenating and wrapping [text] synchronously.
+///
+/// The hyphenator is resolved once: either the injected [hyphenator]
+/// is used, or `Hyphenator.byAbbr(language)` is created lazily.
+/// There is no FutureBuilder - the first frame renders hyphenated text.
 class TextHyphenated extends StatefulWidget {
   final String text;
+
+  /// Language abbreviation, e.g. `ru`. Used only when no [hyphenator]
+  /// is injected. Kept for forward compatibility with additional
+  /// languages.
   final String language;
+
+  /// Optional injected hyphenator. If null, one is created from
+  /// [language].
+  final Hyphenator? hyphenator;
+
   final String symbol;
   final TextStyle? style;
   final GlobalKey? textKey;
@@ -22,96 +37,133 @@ class TextHyphenated extends StatefulWidget {
   //
   final bool doShowDebug;
 
-  const TextHyphenated(this.text, this.language,
-      {this.symbol = '\u{00AD}',
-      this.style,
-      this.textKey,
-      this.strutStyle,
-      this.textAlign,
-      this.textDirection,
-      this.locale,
-      this.softWrap,
-      this.overflow,
-      this.textScaleFactor,
-      this.maxLines,
-      this.semanticsLabel,
-      this.textWidthBasis,
-      this.textHeightBehavior,
-      this.selectionColor,
-      Key? super.key,
-      this.doShowDebug = false});
+  const TextHyphenated(
+    this.text, {
+    super.key,
+    this.language = 'ru',
+    this.hyphenator,
+    this.symbol = '\u{00AD}',
+    this.style,
+    this.textKey,
+    this.strutStyle,
+    this.textAlign,
+    this.textDirection,
+    this.locale,
+    this.softWrap,
+    this.overflow,
+    this.textScaleFactor,
+    this.maxLines,
+    this.semanticsLabel,
+    this.textWidthBasis,
+    this.textHeightBehavior,
+    this.selectionColor,
+    this.doShowDebug = false,
+  });
 
   @override
-  _TextHyphenatedState createState() => _TextHyphenatedState();
+  State<TextHyphenated> createState() => _TextHyphenatedState();
 }
 
 class _TextHyphenatedState extends State<TextHyphenated> {
-  late Future<Hyphenator> _future;
+  Hyphenator? _ownHyphenator;
+
+  // Rebuilding must not re-hyphenate and re-measure the text unless
+  // one of the wrapping inputs actually changed.
+  String? _memoText;
+  double? _memoMaxWidth;
+  Hyphenator? _memoHyphenator;
+  TextStyle? _memoStyle;
+  bool _hasMemo = false;
+  late WrapResult _memoResult;
+
+  Hyphenator get _hyphenator {
+    final injected = widget.hyphenator;
+    if (injected != null) return injected;
+    return _ownHyphenator ??=
+        Hyphenator.byAbbr(widget.language, symbol: widget.symbol);
+  }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _future =
-        Hyphenator.loadAsyncByAbbr(widget.language, symbol: widget.symbol);
+  void didUpdateWidget(covariant TextHyphenated oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.hyphenator == null &&
+        (oldWidget.language != widget.language ||
+            oldWidget.symbol != widget.symbol)) {
+      _ownHyphenator = null;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Hyphenator>(
-      future: _future,
-      builder: (BuildContext context, AsyncSnapshot<Hyphenator> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox.shrink();
-        } else if (snapshot.hasError) {
-          throw snapshot.error!;
-        }
+    return LayoutBuilder(builder: (ctx, cnt) {
+      final maxWidth = cnt.maxWidth;
 
-        return LayoutBuilder(builder: (ctx, cnt) {
-          final txt = _makeText(widget.text);
-          final defaultStyle =
-              widget.style != null ? widget.style! : TextStyle();
-          final wrapped = snapshot.data!.wrap(txt, defaultStyle, cnt.maxWidth);
+      // Unbounded constraints (e.g. inside a scrollable):
+      // no wrapping possible, render the plain text.
+      if (!maxWidth.isFinite) {
+        return _makeText(widget.text);
+      }
 
-          final wrappedText = _makeText(wrapped.textStr);
+      final style = widget.style ?? const TextStyle();
+      final wrapped = _wrap(style, maxWidth);
+      final wrappedText = _makeText(wrapped.textStr);
 
-          if (widget.doShowDebug == false) {
-            return wrappedText;
-          } else {
-            // print(wrapped.sizeByText);
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(child: wrappedText),
-                Positioned(
-                  right: 0,
-                  bottom: -80,
-                  child: Container(
-                      color: wrapped.isSizeMatching
-                          ? Colors.green.withAlpha(200)
-                          : Colors.red.withAlpha(200),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                              'is-match: ' + wrapped.isSizeMatching.toString()),
-                          Text('size-text : ' +
-                              wrapped.debugSizeByText.width.toString() +
-                              '/' +
-                              wrapped.debugSizeByText.height.toString()),
-                          Text('size-paint: ' +
-                              wrapped.size.width.toString() +
-                              '/' +
-                              wrapped.size.height.toString()),
-                          Text('max-width: ' + wrapped.maxWidth.toString()),
-                        ],
-                      )),
-                ),
-              ],
-            );
-          }
-        });
-      },
-    );
+      if (!widget.doShowDebug) {
+        return wrappedText;
+      }
+
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(child: wrappedText),
+          Positioned(
+            right: 0,
+            bottom: -80,
+            child: ColoredBox(
+                color: wrapped.isSizeMatching
+                    ? Colors.green.withAlpha(200)
+                    : Colors.red.withAlpha(200),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('is-match: ' + wrapped.isSizeMatching.toString()),
+                    Text('size-text : ' +
+                        wrapped.debugSizeByText.width.toString() +
+                        '/' +
+                        wrapped.debugSizeByText.height.toString()),
+                    Text('size-paint: ' +
+                        wrapped.size.width.toString() +
+                        '/' +
+                        wrapped.size.height.toString()),
+                    Text('max-width: ' + wrapped.maxWidth.toString()),
+                  ],
+                )),
+          ),
+        ],
+      );
+    });
+  }
+
+  WrapResult _wrap(TextStyle style, double maxWidth) {
+    final hyphenator = _hyphenator;
+
+    if (_hasMemo &&
+        _memoText == widget.text &&
+        _memoMaxWidth == maxWidth &&
+        _memoHyphenator == hyphenator &&
+        _memoStyle == style) {
+      return _memoResult;
+    }
+
+    final result = hyphenator.wrap(_makeText(widget.text), style, maxWidth);
+
+    _memoText = widget.text;
+    _memoMaxWidth = maxWidth;
+    _memoHyphenator = hyphenator;
+    _memoStyle = style;
+    _memoResult = result;
+    _hasMemo = true;
+    return result;
   }
 
   Text _makeText(String str) {
