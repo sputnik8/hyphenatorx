@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
 
+typedef _WrapKey = ({
+  String text,
+  double maxWidth,
+  Hyphenator hyphenator,
+  TextStyle style,
+  TextAlign? textAlign,
+  TextDirection? textDirection,
+  Locale? locale,
+  TextScaler? textScaler,
+  int? maxLines,
+  TextWidthBasis? textWidthBasis,
+  TextHeightBehavior? textHeightBehavior,
+});
+
 /// Text widget hyphenating and wrapping [text] synchronously.
 ///
 /// The hyphenator is resolved once: either the injected [hyphenator]
@@ -68,11 +82,7 @@ class _TextHyphenatedState extends State<TextHyphenated> {
 
   // Rebuilding must not re-hyphenate and re-measure the text unless
   // one of the wrapping inputs actually changed.
-  String? _memoText;
-  double? _memoMaxWidth;
-  Hyphenator? _memoHyphenator;
-  TextStyle? _memoStyle;
-  bool _hasMemo = false;
+  _WrapKey? _memoKey;
   late WrapResult _memoResult;
 
   Hyphenator get _hyphenator {
@@ -145,23 +155,28 @@ class _TextHyphenatedState extends State<TextHyphenated> {
 
   WrapResult _wrap(TextStyle style, double maxWidth) {
     final hyphenator = _hyphenator;
+    final key = (
+      text: widget.text,
+      maxWidth: maxWidth,
+      hyphenator: hyphenator,
+      style: style,
+      textAlign: widget.textAlign,
+      textDirection: widget.textDirection,
+      locale: widget.locale,
+      textScaler: widget.textScaler,
+      maxLines: widget.maxLines,
+      textWidthBasis: widget.textWidthBasis,
+      textHeightBehavior: widget.textHeightBehavior,
+    );
 
-    if (_hasMemo &&
-        _memoText == widget.text &&
-        _memoMaxWidth == maxWidth &&
-        _memoHyphenator == hyphenator &&
-        _memoStyle == style) {
+    if (_memoKey == key) {
       return _memoResult;
     }
 
     final result = hyphenator.wrap(_makeText(widget.text), style, maxWidth);
 
-    _memoText = widget.text;
-    _memoMaxWidth = maxWidth;
-    _memoHyphenator = hyphenator;
-    _memoStyle = style;
+    _memoKey = key;
     _memoResult = result;
-    _hasMemo = true;
     return result;
   }
 

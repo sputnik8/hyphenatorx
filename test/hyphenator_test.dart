@@ -346,6 +346,47 @@ many creative endeavors and disciplines.""";
     expect(textFinder, findsOneWidget);
   });
 
+  testWidgets('widget-recomputes-wrapping-when-max-lines-changes', (
+    WidgetTester tester,
+  ) async {
+    late StateSetter setWidgetState;
+    int? maxLines;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              setWidgetState = setState;
+              return SizedBox(
+                width: 100,
+                child: TextHyphenated(
+                  'подразделение подразделение',
+                  maxLines: maxLines,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    Text renderedText() => tester.widget<Text>(
+          find.descendant(
+            of: find.byType(TextHyphenated),
+            matching: find.byType(Text),
+          ),
+        );
+
+    expect(renderedText().data, contains('\n'));
+
+    setWidgetState(() => maxLines = 1);
+    await tester.pump();
+
+    expect(renderedText().data, isNot(contains('\n')));
+    expect(renderedText().maxLines, 1);
+  });
+
   // -------------------------------------------------------------------
   // stopwatch
   // -------------------------------------------------------------------
