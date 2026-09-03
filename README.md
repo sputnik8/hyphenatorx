@@ -125,25 +125,24 @@ expect(
 Access the wrapped hyphenation result respecting the given width.
 
 ```dart
-final hyphenator = Hyphenator(Language_en_us());
+final hyphenator = Hyphenator.ru();
+final text = const Text('подразделение');
+final style = const TextStyle(fontSize: 16);
 
-WrapResult wrap = hyphenator.wrap(
-  final Text text, final TextStyle style, final maxWidth);
+final wrap = hyphenator.wrap(text, style, 100);
 
 // The hyphenated text with hyphens and newlines:
 // 
-// sub-
-// di-
-// vi-
-// sion- 
-print( wrap.textStr ); 
+// подразде-
+// ление
+print(wrap.textStr);
 
 // Whether the returned text is equal to 
 // or smaller than maxWidth. 
 //
 // If FALSE, try a different font size.
 
-print( wrap.isSizeMatching );  
+print(wrap.isSizeMatching);
 ```
 
 ### Manual Hyphenation 
@@ -151,86 +150,50 @@ print( wrap.isSizeMatching );
 Iterate through the token tree for a custom approach of hyphenation. Before and after each token a valid hyphen could be added. 
 
 ```dart
-final text = """A vast subdivision of culture, 
-    composed of many creative endeavors and disciplines.""";
+final text = 'Подразделение культуры и творчества.';
 
-final hyphenator = Hyphenator(Language_en_us());
+final hyphenator = Hyphenator.ru();
 final List<TextPartToken> tokens = hyphenator.hyphenateTextToTokens(text);
 
-tokens.forEach((part) {
+for (final part in tokens) {
   if (part is NewlineToken) {
     print(part.text); // = is always a single newline
   } else if (part is TabsAndSpacesToken) {
     print(part.text); // tabs and spaces found in `text`
   } else if (part is WordToken) {
-    part.parts.forEach((syllableAndSurrounding) {
-      print(syllableAndSurrounding.text); // sub / di / vi / sion.
-    });
+    for (final syllableAndSurrounding in part.parts) {
+      print(syllableAndSurrounding.text); // под / раз / де / ле / ние.
+    }
   }
-});
+}
 
-// A
-// vast
-// sub
-// di
-// vi
-// sion
+// Под
+// раз
+// де
+// ле
+// ние
 ```
 
 ## Languages and Abbreviations
 
-The abbreviations correspond with the `tex` file names found at [tug.org](https://tug.org/tex-hyphen/).
-
-### Strings 
-
-```dart
-List<String> abbr = Hyphenator.languageAbbr();
-
-print(abbr); 
-
-[af, as, bg, bn, ca, cop, cs, cy, da, de_1901, de_1996, de_ch_1901, el_monoton, el_polyton, en_gb, en_us, eo, es, et, eu, fi, fr, fur, ga, gl, grc, gu, hi, hr, hsb, hu, hy, ia, id, is, it, ka, kmr, kn, la_x_classic, la, lt, lv, ml, mn_cyrl_x_lmc, mn_cyrl, mr, mul_ethi, nb, nl, nn, or, pa, pl, pms, pt, rm, ro, ru, sa, sh_cyrl, sk, sl, sv, ta, te, th, tk, tr, uk, zh_latn_pinyin]
-```
-
-### Enum
-
-As Islandic is been abbreviated "is", which is a Dart keyword, the prefix "language" had been added.
-
-```dart 
-enum Language { language_af,language_as,language_bg,language_bn,
-language_ca,language_cop,language_cs,language_cy,language_da,
-language_de_1901,language_de_1996,language_de_ch_1901,
-language_el_monoton,language_el_polyton,language_en_gb
-language_en_us,language_eo,language_es,language_et,
-language_eu,language_fi,language_fr,language_fur,language_ga,
-language_gl,language_grc,language_gu,language_hi,language_hr,
-language_hsb,language_hu,language_hy,language_ia,language_id,
-language_is,language_it,language_ka,language_kmr,language_kn,
-language_la_x_classic,language_la,language_lt,language_lv,
-language_ml,language_mn_cyrl_x_lmc,language_mn_cyrl,language_mr,
-language_mul_ethi,language_nb,language_nl,language_nn,
-language_or,language_pa,language_pl,language_pms,language_pt,
-language_rm,language_ro,language_ru,language_sa,language_sh_cyrl,
-language_sk,language_sl,language_sv,language_ta,language_te,
-language_th,language_tk,language_tr,language_uk,
-language_zh_latn_pinyin }
-```
+Russian (`ru`) is bundled. The abbreviation matches the source TeX filename at
+[tug.org](https://tug.org/tex-hyphen/). Additional languages require generating
+and registering their configurations.
 
 ## Performance
 
-Old machine:
+Pattern lookup uses a map, and previously hyphenated words are cached. Cache
+size is bounded for long-running applications.
 
-* Instantiation via Dart EN_US file: 30 milliseconds
-* Hyphenating text with 258 words: 46-56 milliseconds
-
-Internal is-letter-testing impacts performance the most. At the moment, a binary search is performed over a combined set of (complete?) alphabets from various languages, plus an extra check for languages not included. Not terrible efficient, needs improvement.
-
-## Generate JSON and Dart files
+## Generate Dart language data
 
 ```shell
-dart run ./tool/tex2dart.dart
+dart run tool/tex2data.dart ru
 ```
 
-The tool will delete `assets` and `lib/languages` before generating new files. It processes tex files located in `tool\tex\`.
+The generator reads `tool/tex/hyph-<abbr>.tex` and writes
+`lib/languages/language_<abbr>.dart`. Register newly generated configurations
+in `Hyphenator.byAbbr` before using them by abbreviation.
 
 ## Source
 
