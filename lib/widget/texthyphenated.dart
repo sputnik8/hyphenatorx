@@ -18,7 +18,8 @@ typedef _WrapKey = ({
 /// Text widget hyphenating and wrapping [text] synchronously.
 ///
 /// The hyphenator is resolved once: either the injected [hyphenator]
-/// is used, or `Hyphenator.byAbbr(language)` is created lazily.
+/// is used, the default Russian hyphenator is shared between widgets,
+/// or `Hyphenator.byAbbr(language)` is created lazily for custom settings.
 /// There is no FutureBuilder - the first frame renders hyphenated text.
 class TextHyphenated extends StatefulWidget {
   final String text;
@@ -78,6 +79,8 @@ class TextHyphenated extends StatefulWidget {
 }
 
 class _TextHyphenatedState extends State<TextHyphenated> {
+  static final Hyphenator _sharedDefaultHyphenator = Hyphenator.ru();
+
   Hyphenator? _ownHyphenator;
 
   // Rebuilding must not re-hyphenate and re-measure the text unless
@@ -88,6 +91,11 @@ class _TextHyphenatedState extends State<TextHyphenated> {
   Hyphenator get _hyphenator {
     final injected = widget.hyphenator;
     if (injected != null) return injected;
+
+    if (widget.language == 'ru' && widget.symbol == '\u{00AD}') {
+      return _sharedDefaultHyphenator;
+    }
+
     return _ownHyphenator ??=
         Hyphenator.byAbbr(widget.language, symbol: widget.symbol);
   }

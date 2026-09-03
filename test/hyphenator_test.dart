@@ -346,6 +346,27 @@ many creative endeavors and disciplines.""";
     expect(textFinder, findsOneWidget);
   });
 
+  testWidgets('widget-renders-with-a-custom-split-symbol', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          width: 100,
+          child: TextHyphenated(
+            'подразделение подразделение',
+            symbol: '_',
+          ),
+        ),
+      ),
+    ));
+
+    final textFinder = find.byWidgetPredicate(
+      (widget) => widget is Text && (widget.data?.contains('\n') ?? false),
+    );
+    expect(textFinder, findsOneWidget);
+  });
+
   testWidgets('widget-recomputes-wrapping-when-max-lines-changes', (
     WidgetTester tester,
   ) async {
