@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:hyphenatorx/src/token/texthelper.dart';
 
-import 'tokens.dart';
-import 'wrapresult.dart';
+import 'package:hyphenatorx/token/tokens.dart';
+import 'package:hyphenatorx/token/wrapresult.dart';
 
 /// Hyphenates tokens with respect to the attributes of
 /// [Text], [TextStyle] and [maxWidth].
@@ -24,7 +24,7 @@ class LineWrapperHyphen {
     _painter = TextPainter(
       textDirection: _text.textDirection ?? TextDirection.ltr,
       maxLines: _text.maxLines,
-      textScaleFactor: _text.textScaleFactor ?? 1.0,
+      textScaler: _text.textScaler ?? TextScaler.noScaling,
       locale: _text.locale,
       textAlign: _text.textAlign ?? TextAlign.start,
       textHeightBehavior: _text.textHeightBehavior,
@@ -123,9 +123,8 @@ class LineWrapperHyphen {
       return WrapResult(_text, _style, _maxWidth, Size(0, 0), _lines);
     }
 
-    final str = _lines
-        .map<String>((line) => line.map((e) => e.render()).join())
-        .join();
+    final str =
+        _lines.map<String>((line) => line.map((e) => e.render()).join()).join();
     _painter.text = TextSpan(text: str, style: _style);
     _painter.layout();
 

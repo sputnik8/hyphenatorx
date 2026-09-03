@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/token/wrapresult.dart';
 
 /// Text widget hyphenating and wrapping [text] synchronously.
 ///
@@ -28,7 +27,7 @@ class TextHyphenated extends StatefulWidget {
   final Locale? locale;
   final bool? softWrap;
   final TextOverflow? overflow;
-  final double? textScaleFactor;
+  final TextScaler? textScaler;
   final int? maxLines;
   final String? semanticsLabel;
   final TextWidthBasis? textWidthBasis;
@@ -51,7 +50,7 @@ class TextHyphenated extends StatefulWidget {
     this.locale,
     this.softWrap,
     this.overflow,
-    this.textScaleFactor,
+    this.textScaler,
     this.maxLines,
     this.semanticsLabel,
     this.textWidthBasis,
@@ -177,7 +176,7 @@ class _TextHyphenatedState extends State<TextHyphenated> {
       locale: widget.locale,
       softWrap: widget.softWrap,
       overflow: widget.overflow,
-      textScaleFactor: widget.textScaleFactor,
+      textScaler: widget.textScaler,
       maxLines: widget.maxLines,
       semanticsLabel: widget.semanticsLabel,
       textWidthBasis: widget.textWidthBasis,

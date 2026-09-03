@@ -1,4 +1,4 @@
-import '../languages/languageconfig.dart';
+import 'package:hyphenatorx/languages/languageconfig.dart';
 
 class CalculationHelper {
   final _startEndMarker = '.';

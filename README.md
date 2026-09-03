@@ -1,11 +1,9 @@
 # Hyphenator
 
-Implementation of an hyphenation algorithm for various languages, based on TeX definitions.
+Implementation of a Russian hyphenation algorithm based on TeX definitions.
 
 * Offers a `Widget` hyphenating a `String` and wrapping the result based on the available width.
 * Offers various function calls to hyphenate a `String` at all possible positions. 
-
-The package seems to work fine for western languages, other languages have to be evaluated.
 
 The `tex` patterns used in the algorithm can be at [tug.org](https://tug.org/tex-hyphen/).
 
@@ -21,51 +19,41 @@ The package [text_wrap_auto_size](https://pub.dev/packages/text_wrap_auto_size) 
 ```dart 
 import 'package:hyphenatorx/widget/texthyphenated.dart';
 
-// sub-
-// di-
-// vi-
-// sion
-TextHyphenated('subdivision', 
-  'en_us',
-  style: TextStyle(fontSize: 56))
+// под-
+// раз-
+// де-
+// ле-
+// ние
+TextHyphenated(
+  'подразделение',
+  style: TextStyle(fontSize: 56),
+)
 ```
 
 ```dart
 import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/languages/language_en_us.dart';
+final hyphenator = Hyphenator.ru(symbol: '_');
 
-final hyphenator = Hyphenator(Language_en_us(), symbol: '_');
-
-// 'sub_di_vi_sion_ _sub_di_vi_sion'
+// 'под_раз_де_ле_ние_ _под_раз_де_ле_ние'
 print(
-  hyphenator.hyphenateText('subdivision subdivision', 
+  hyphenator.hyphenateText('подразделение подразделение',
     hyphenAtBoundaries: true));
 
-// sub_di_vi_sion sub_di_vi_sion
-print(hyphenator.hyphenateText('subdivision subdivision'));
+// под_раз_де_ле_ние под_раз_де_ле_ние
+print(hyphenator.hyphenateText('подразделение подразделение'));
 
-// sub_di_vi_sion
-print(hyphenator.hyphenateWord('subdivision'));
+// под_раз_де_ле_ние
+print(hyphenator.hyphenateWord('подразделение'));
 
-// ['sub', 'di', 'vi', 'sion']
-print(hyphenator.syllablesWord('subdivision'));      
+// ['под', 'раз', 'де', 'ле', 'ние']
+print(hyphenator.syllablesWord('подразделение'));
 ```
 
 ## Usage
 
-Hyphenator instantiates a language specific configuration:
-
-**As a Dart object** 
-
-Without synchronous loading. The data is compiled into your project. All 71 langauge files together have a size of 13.3 MB.
-  
-**From JSON**
-
-With asynchronous loading. The data will be loaded as needed from the local `assets` folder. This option is less memory intensive.
-
-**Languages**
-
-Available languages are given by the `enum Language`.
+Hyphenator uses synchronous pattern data compiled into the package. Russian is
+bundled; additional language configurations can be generated from the TeX
+sources with `tool/tex2data.dart`.
 
 **Cache**
 
@@ -75,41 +63,17 @@ Internally, hyphenated as well as non-hyphenated words are cached. Complete text
 
 The hyphen symbol can be defined, the default is the soft-wrap `'\u{00AD}'`.
 
-### Asynchronous Instantiation
-
-Select the appropriate `Language.language_XX` value.
-
-Or set a language code like `en_us`.
-
-```dart
-import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/languages/language_en_us.dart';
-
-final hyphernator = await Hyphenator.loadAsync(
-    Language.language_en_us, 
-    symbol: '_');
-
-// OR THIS:
-
-final hyphernator = await Hyphenator.loadAsyncByAbbr(
-    'en_us', 
-    symbol: '_');
-```
-
 ### Synchronous Instantiation
 
-Instatiate the appropriate `Language_XX()` object.
+Use the Russian factory or instantiate a generated configuration directly.
 
 ```dart 
 import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/languages/language_en_us.dart';
 
-final config = Language_en_us();
+final hyphenator = Hyphenator.ru(symbol: '_');
 
-final hyphenator = Hyphenator(
-  config,
-  symbol: '_',
-);
+// Equivalent abbreviation-based factory:
+final sameHyphenator = Hyphenator.byAbbr('ru', symbol: '_');
 ```
 
 ### Widget Usage
@@ -119,16 +83,18 @@ This Widget outputs a `Text`. It hyphenates and wraps the input `String` dependi
 ```dart 
 import 'package:hyphenatorx/widget/texthyphenated.dart';
 
-TextHyphenated('subdivision', 
-  'en_us',
-  style: TextStyle(fontSize: 56))
+TextHyphenated(
+  'подразделение',
+  style: TextStyle(fontSize: 56),
+)
 
 // Wraps the output according to the available width:
 // 
-// sub-
-// di-
-// vi-
-// sion
+// под-
+// раз-
+// де-
+// ле-
+// ние
 ```
 
 ### Function Call
@@ -136,24 +102,24 @@ TextHyphenated('subdivision',
 Inject the hyphenation symbol at all possible positions.
 
 ```dart
-final hyphenator = Hyphenator(Language_en_us());
+final hyphenator = Hyphenator.ru(symbol: '_');
 
 expect(
-  hyphenator.hyphenateText('subdivision subdivision', 
-    hyphenAtBoundaries: true), 
-  'sub_di_vi_sion_ _sub_di_vi_sion');
+  hyphenator.hyphenateText('подразделение подразделение',
+    hyphenAtBoundaries: true),
+  'под_раз_де_ле_ние_ _под_раз_де_ле_ние');
 
 expect(
-  hyphenator.hyphenateText('subdivision subdivision'), 
-  'sub_di_vi_sion sub_di_vi_sion');
+  hyphenator.hyphenateText('подразделение подразделение'),
+  'под_раз_де_ле_ние под_раз_де_ле_ние');
 
 expect(
-  hyphenator.hyphenateWord('subdivision'),
-  'sub_di_vi_sion');
+  hyphenator.hyphenateWord('подразделение'),
+  'под_раз_де_ле_ние');
 
 expect(
-  hyphenator.syllablesWord('subdivision'),
-  ['sub', 'di', 'vi', 'sion']);      
+  hyphenator.syllablesWord('подразделение'),
+  ['под', 'раз', 'де', 'ле', 'ние']);
 ```
 
 Access the wrapped hyphenation result respecting the given width.

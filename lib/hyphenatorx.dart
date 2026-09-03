@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:hyphenatorx/src/extensions.dart';
 
-import 'languages/language_ru.dart';
-import 'languages/languageconfig.dart';
-import 'src/calculationhelper.dart';
-import 'src/letterutil.dart';
-import 'token/linewrapperhyphen.dart';
-import 'token/linewrappernohyphen.dart';
-import 'token/tokens.dart';
-import 'token/wrapresult.dart';
+import 'package:hyphenatorx/languages/language_ru.dart';
+import 'package:hyphenatorx/languages/languageconfig.dart';
+import 'package:hyphenatorx/src/calculationhelper.dart';
+import 'package:hyphenatorx/src/letterutil.dart';
+import 'package:hyphenatorx/token/linewrapperhyphen.dart';
+import 'package:hyphenatorx/token/linewrappernohyphen.dart';
+import 'package:hyphenatorx/token/tokens.dart';
+import 'package:hyphenatorx/token/wrapresult.dart';
 
-export 'languages/languageconfig.dart';
-export 'languages/language_ru.dart';
-export 'token/tokens.dart';
-export 'token/wrapresult.dart';
+export 'package:hyphenatorx/languages/language_ru.dart';
+export 'package:hyphenatorx/languages/languageconfig.dart';
+export 'package:hyphenatorx/token/tokens.dart';
+export 'package:hyphenatorx/token/wrapresult.dart';
 
 /// Wrapper class hyphenating text.
 ///
@@ -62,8 +62,7 @@ class Hyphenator {
           minLetterCount: minLetterCount,
         );
       default:
-        throw ArgumentError(
-            'Unsupported language "$abbr". Available: ["ru"]. '
+        throw ArgumentError('Unsupported language "$abbr". Available: ["ru"]. '
             'Additional languages can be generated with tool/tex2data.dart '
             '- see README.');
     }

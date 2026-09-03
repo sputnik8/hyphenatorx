@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/languages/language_ru.dart';
-import 'package:hyphenatorx/token/wrapresult.dart';
 import 'package:hyphenatorx/widget/texthyphenated.dart';
 
 final text =
@@ -169,8 +167,7 @@ void main() {
         expected.write(keyStr[i]);
       }
 
-      expect(
-          hyphenator.hyphenateWord(keyStr), expected.toString(),
+      expect(hyphenator.hyphenateWord(keyStr), expected.toString(),
           reason: 'exception "$source"');
     }
   });
