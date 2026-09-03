@@ -1,20 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphenatorx/widget/texthyphenated.dart';
 
 class ExampleWidget extends StatefulWidget {
-  const ExampleWidget({Key? key}) : super(key: key);
+  const ExampleWidget({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _ExampleWidgetState createState() => _ExampleWidgetState();
+  State<ExampleWidget> createState() => _ExampleWidgetState();
 }
 
 class _ExampleWidgetState extends State<ExampleWidget> {
-  String text =
-      "A vast subdivision of culture, composed of many creative endeavors and disciplines.";
+  String text = 'Подразделение гидростанции количество творчество.';
   final controller = TextEditingController();
-  final bold = const TextStyle(fontWeight: FontWeight.bold);
 
   @override
   void initState() {
@@ -34,21 +30,29 @@ class _ExampleWidgetState extends State<ExampleWidget> {
       child: Column(
         children: [
           const SizedBox(height: 16),
-          Text(
-            "TextHyphenated(text, 'en_us', doShowDebug: true, style: const TextStyle(fontSize: 56))",
-            style: GoogleFonts.robotoMono().copyWith(
-                fontWeight: FontWeight.bold,
-                backgroundColor: Colors.yellow.shade200),
+          const Text(
+            'TextHyphenated(text, doShowDebug: true, style: TextStyle(fontSize: 56))',
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontWeight: FontWeight.bold,
+              backgroundColor: Color(0xFFFFF9C4),
+            ),
           ),
           // const Divider(),
           TextField(
               controller: controller,
               decoration: const InputDecoration(hintText: 'Enter some text')),
           const SizedBox(height: 16),
-          TextHyphenated(text, 'en_us',
+          TextHyphenated(text,
               doShowDebug: true, style: const TextStyle(fontSize: 56)),
         ],
       ),
     ));
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }

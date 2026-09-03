@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import 'tokens.dart';
+import 'package:hyphenatorx/token/tokens.dart';
 
 class WrapResult {
   final Text text;

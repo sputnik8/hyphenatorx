@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/languages/languageconfig.dart';
 import 'package:hyphenatorx/widget/texthyphenated.dart';
 
 void main() {
@@ -20,17 +19,17 @@ class MyApp extends StatelessWidget {
 }
 
 class HyphenatorExampleWidget extends StatefulWidget {
-  const HyphenatorExampleWidget({Key? key}) : super(key: key);
+  const HyphenatorExampleWidget({super.key});
 
   @override
-  _HyphenatorExampleWidgetState createState() =>
+  State<HyphenatorExampleWidget> createState() =>
       _HyphenatorExampleWidgetState();
 }
 
 class _HyphenatorExampleWidgetState extends State<HyphenatorExampleWidget> {
-  String text = "subdivision";
+  String text = 'подразделение';
   final controller = TextEditingController();
-  late Future<Hyphenator> _future;
+  final hyphenator = Hyphenator.ru(symbol: '_');
 
   @override
   void initState() {
@@ -44,64 +43,51 @@ class _HyphenatorExampleWidgetState extends State<HyphenatorExampleWidget> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _future = Hyphenator.loadAsync(Language.language_en_us, symbol: '_');
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SingleChildScrollView(
+        child: Center(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width * 2 / 3,
+            child: Column(
+              children: [
+                TextField(
+                  controller: controller,
+                  decoration:
+                      const InputDecoration(hintText: 'Enter some text'),
+                ),
+                const SizedBox(height: 16),
+                text.isEmpty
+                    ? const Text('Enter some text')
+                    : Text(hyphenator.hyphenateText(text),
+                        style: const TextStyle(fontSize: 32)),
+                const SizedBox(height: 32),
+                if (text.isNotEmpty)
+                  Text(
+                    'Cached hyphenated:\n\n${hyphenator.cachedHyphendWords}',
+                    textAlign: TextAlign.center,
+                  ),
+                const SizedBox(height: 16),
+                if (text.isNotEmpty)
+                  Text(
+                    'Cached non-hyphenated:\n\n${hyphenator.cachedNonHyphendWords}',
+                    textAlign: TextAlign.center,
+                  ),
+                const Divider(),
+                const Text('Widget test:'),
+                const SizedBox(height: 16),
+                const TextHyphenated('подразделение', symbol: '@'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: FutureBuilder<Hyphenator>(
-          future: _future,
-          builder: (BuildContext context, AsyncSnapshot<Hyphenator> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final Hyphenator hyphernator = snapshot.data!;
-
-            return SingleChildScrollView(
-                child: Center(
-                    child: SizedBox(
-                        width: MediaQuery.of(context).size.width * 2 / 3,
-                        child: Column(
-                          children: [
-                            TextField(
-                              controller: controller,
-                              decoration: const InputDecoration(
-                                  hintText: 'Enter some text'),
-                            ),
-                            const SizedBox(height: 16),
-                            text.isEmpty
-                                ? const Text('Enter some text')
-                                : Text(hyphernator.hyphenateText(text),
-                                    style: const TextStyle(fontSize: 32)),
-                            const SizedBox(height: 32),
-                            text.isEmpty
-                                ? const SizedBox.shrink()
-                                : Text(
-                                    'Cached hyphenated:\n\n${hyphernator.cachedHyphendWords}',
-                                    textAlign: TextAlign.center,
-                                  ),
-                            const SizedBox(height: 16),
-                            text.isEmpty
-                                ? const SizedBox.shrink()
-                                : Text(
-                                    'Cached non-hyphenated:\n\n${hyphernator.cachedNonHyphendWords}',
-                                    textAlign: TextAlign.center,
-                                  ),
-                            // const SizedBox(height: 32),
-                            const Divider(),
-                            const Text("Widget Test:"),
-                            const SizedBox(height: 16),
-                            const Text(
-                                "TextHyphenated('subdivision', 'en_us', symbol:'@')"),
-                            const SizedBox(height: 16),
-                            const TextHyphenated('subdivision', 'en_us',
-                                symbol: '@'),
-                          ],
-                        ))));
-          }),
-    );
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }

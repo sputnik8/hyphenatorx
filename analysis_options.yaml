@@ -1,5 +1,5 @@
 analyzer:
-  strong-mode:
   errors:
+    always_use_package_imports: warning
     missing_required_param: warning
     missing_return: warning

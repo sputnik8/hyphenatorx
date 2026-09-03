@@ -1,21 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
 
 class ExampleFunction extends StatefulWidget {
-  const ExampleFunction({Key? key}) : super(key: key);
+  const ExampleFunction({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _ExampleFunctionState createState() => _ExampleFunctionState();
+  State<ExampleFunction> createState() => _ExampleFunctionState();
 }
 
 class _ExampleFunctionState extends State<ExampleFunction> {
-  String text =
-      "A vast subdivision of culture, composed of many creative endeavors and disciplines.";
+  String text = 'Подразделение гидростанции количество творчество.';
   final controller = TextEditingController();
-  late Future<Hyphenator> _future;
-  final bold = const TextStyle(fontWeight: FontWeight.bold);
+  final hyphenator = Hyphenator.ru(symbol: '_');
 
   @override
   void initState() {
@@ -29,75 +25,68 @@ class _ExampleFunctionState extends State<ExampleFunction> {
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _future = Hyphenator.loadAsyncByAbbr('en_us', symbol: '_');
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<Hyphenator>(
-          future: _future,
-          builder: (BuildContext context, AsyncSnapshot<Hyphenator> snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final Hyphenator hyphernator = snapshot.data!;
-
-            return SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  Text(
-                      "(await Hyphenator.loadAsyncByAbbr('en_us', symbol: '_')).hyphenateText(text)",
-                      style: GoogleFonts.robotoMono().copyWith(
-                          fontWeight: FontWeight.bold,
-                          backgroundColor: Colors.yellow.shade200)),
-                  // const Divider(),
-                  TextField(
-                      controller: controller,
-                      decoration:
-                          const InputDecoration(hintText: 'Enter some text')),
-                  const SizedBox(height: 16),
-                  _colum(hyphernator),
-                ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 16),
+            const Text(
+              "Hyphenator.ru(symbol: '_').hyphenateText(text)",
+              style: TextStyle(
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.bold,
+                backgroundColor: Color(0xFFFFF9C4),
               ),
-            );
-          }),
+            ),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(hintText: 'Enter some text'),
+            ),
+            const SizedBox(height: 16),
+            _column(hyphenator),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _colum(Hyphenator hyphernator) {
+  Widget _column(Hyphenator hyphenator) {
     return text.isEmpty
         ? const SizedBox.shrink()
         : Column(
             children: [
               Text(
-                hyphernator.hyphenateText(text),
+                hyphenator.hyphenateText(text),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text('Cache Hyphenated:',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.robotoMono()
-                      .copyWith(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      fontFamily: 'monospace', fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Text(
-                '${hyphernator.cachedHyphendWords}',
+                '${hyphenator.cachedHyphendWords}',
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               Text('Cache Non-Hyphenated:',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.robotoMono()
-                      .copyWith(fontWeight: FontWeight.bold)),
+                  style: const TextStyle(
+                      fontFamily: 'monospace', fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Text(
-                '${hyphernator.cachedNonHyphendWords}',
+                '${hyphenator.cachedNonHyphendWords}',
                 textAlign: TextAlign.center,
               ),
             ],
           );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
   }
 }

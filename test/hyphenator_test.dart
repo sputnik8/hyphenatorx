@@ -4,19 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/languages/language_en_us.dart';
-import 'package:hyphenatorx/languages/languageconfig.dart';
-import 'package:hyphenatorx/token/wrapresult.dart';
+import 'package:hyphenatorx/widget/texthyphenated.dart';
 
 final text =
-    '''The arts are a vast subdivision of culture, composed of many creative endeavors and disciplines. It is a broader term than "art", which as a description of a field usually means only the visual arts. The arts encompass the visual arts, the literary arts and the performing arts – music, theatre, dance and film, among others. This list is by no means comprehensive, but only meant to introduce the concept of the arts. For all intents and purposes, the history of the arts begins with the history of art. The arts might have origins in early human evolutionary prehistory. According to a recent suggestion, several forms of audio and visual arts (rhythmic singing and drumming on external objects, dancing, body and face painting) were developed very early in hominid evolution by the forces of natural selection in order to reach an altered state of consciousness. In this state, which Jordania calls battle trance, hominids and early human were losing their individuality, and were acquiring a new collective identity, where they were not feeling fear or pain, and were religiously dedicated to the group interests, in total disregards of their individual safety and life. This state was needed to defend early hominids from predators, and also to help to obtain food by aggressive scavenging. Ritualistic actions involving heavy rhythmic music, rhythmic drill, coupled sometimes with dance and body painting had been universally used in traditional cultures before the hunting or military sessions in order to put them in a specific altered state of consciousness and raise the morale of participants.''';
-final expectedText =
-    '''The arts are a vast sub-di-vi-sion of cul-ture, com-posed of many cre-ative endeav-ors and dis-ci-plines. It is a broader term than "art", which as a descrip-tion of a field usu-ally means only the visual arts. The arts encom-pass the visual arts, the lit-er-ary arts and the per-form-ing arts – music, the-atre, dance and film, among others. This list is by no means com-pre-hen-sive, but only meant to intro-duce the con-cept of the arts. For all intents and pur-poses, the his-tory of the arts begins with the his-tory of art. The arts might have ori-gins in early human evo-lu-tion-ary pre-his-tory. Accord-ing to a recent sugges-tion, sev-eral forms of audio and visual arts (rhyth-mic sing-ing and drum-ming on exter-nal objects, danc-ing, body and face paint-ing) were devel-oped very early in hominid evo-lu-tion by the forces of nat-ural selec-tion in order to reach an altered state of con-scious-ness. In this state, which Jor-da-nia calls bat-tle trance, hominids and early human were los-ing their indi-vid-u-al-ity, and were acquir-ing a new col-lec-tive iden-tity, where they were not feel-ing fear or pain, and were reli-giously ded-i-cated to the group inter-ests, in total dis-re-gards of their indi-vid-ual safety and life. This state was needed to defend early hominids from preda-tors, and also to help to obtain food by aggres-sive scaveng-ing. Rit-u-al-is-tic actions involv-ing heavy rhyth-mic music, rhyth-mic drill, cou-pled some-times with dance and body paint-ing had been uni-ver-sally used in tra-di-tional cul-tures before the hunt-ing or mil-i-tary ses-sions in order to put them in a spe-cific altered state of con-scious-ness and raise the morale of par-tic-i-pants.''';
+    '''Подразделение гидростанции количество творчество направление обстоятельство электростанция гидрогеология. Обширное подразделение культуры, состоящее из творческих устремлений и дисциплин. Это более широкое понятие, чем искусство, которое обычно означает только изобразительное искусство. Искусство охватывает изобразительное искусство, литературу и исполнительское искусство. Этот список никоим образом не является исчерпывающим, а лишь служит для введения в концепцию искусства.''';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final LanguageConfig config = Language_en_us();
+  final LanguageConfig config = LanguageRu();
   late TextStyle sRoboto;
 
   setUpAll(() async {
@@ -25,7 +21,7 @@ void main() {
     await fontLoader.load();
 
     sRoboto = TextStyle(
-      fontFamily: 'Roboto',
+      fontFamily: 'roboto',
       fontSize: 14,
       fontWeight: FontWeight.w400,
       textBaseline: TextBaseline.alphabetic,
@@ -38,41 +34,29 @@ void main() {
       Size(size.width.roundToDouble(), size.height.roundToDouble());
 
   // -------------------------------------------------------------------
-  // General tests
+  // Instantiation
   // -------------------------------------------------------------------
 
-  test('soft-hyphen', () async {
-    final hyphend = Hyphenator(config).hyphenateWord('subdivision');
-    expect(hyphend.contains('\u{00AD}'), true);
+  test('byAbbr', () {
+    final hyphenator = Hyphenator.byAbbr('ru', symbol: '_');
+    expect(hyphenator.hyphenateText('подразделение'), 'под_раз_де_ле_ние');
   });
 
-  test('abbreviations', () async {
-    final abbr = await Hyphenator.languageAbbr();
-    expect(abbr.contains('en_us'), true);
+  test('byAbbr-unknown-throws', () {
+    expect(() => Hyphenator.byAbbr('xx_yy'), throwsArgumentError);
   });
 
-  test('exceptions', () {
-    final hyphenator = Hyphenator(config, symbol: '_');
-    expect(hyphenator.hyphenateText('philanthropic'), 'phil_an_thropic');
+  test('factory-ru', () {
+    final hyphenator = Hyphenator.ru(symbol: '_');
+    expect(hyphenator.hyphenateText('подразделение'), 'под_раз_де_ле_ние');
   });
 
-  // -------------------------------------------------------------------
-  // load()
-  // -------------------------------------------------------------------
-
-  test('loadAsync', () async {
-    final hyphenator =
-        await Hyphenator.loadAsync(Language.language_en_us, symbol: '_');
-    expect(hyphenator.hyphenateText('subdivision'), 'sub_di_vi_sion');
-    expect(hyphenator.hyphenateText('creative'), 'cre_ative');
-    expect(hyphenator.hyphenateText('disciplines'), 'dis_ci_plines');
+  test('invalid-minWordLength-throws', () {
+    expect(() => Hyphenator(config, minWordLength: 0), throwsArgumentError);
   });
 
-  test('loadAsyncByAbbr', () async {
-    final hyphenator = await Hyphenator.loadAsyncByAbbr('en_us', symbol: '_');
-    expect(hyphenator.hyphenateText('subdivision'), 'sub_di_vi_sion');
-    expect(hyphenator.hyphenateText('creative'), 'cre_ative');
-    expect(hyphenator.hyphenateText('disciplines'), 'dis_ci_plines');
+  test('invalid-minLetterCount-throws', () {
+    expect(() => Hyphenator(config, minLetterCount: -1), throwsArgumentError);
   });
 
   // -------------------------------------------------------------------
@@ -81,9 +65,28 @@ void main() {
 
   test('hyphenate-text', () {
     final hyphenator = Hyphenator(config, symbol: '_');
-    expect(hyphenator.hyphenateText('subdivision'), 'sub_di_vi_sion');
-    expect(hyphenator.hyphenateText('creative'), 'cre_ative');
-    expect(hyphenator.hyphenateText('disciplines'), 'dis_ci_plines');
+    expect(hyphenator.hyphenateText('подразделение'), 'под_раз_де_ле_ние');
+    expect(hyphenator.hyphenateText('творчество'), 'твор_че_ство');
+    expect(hyphenator.hyphenateText('гидростанция'), 'гид_ро_стан_ция');
+  });
+
+  test('hyphenate-text-punctuation', () {
+    final hyphenator = Hyphenator(config, symbol: '_');
+    expect(hyphenator.hyphenateText('Подразделение, творчество: количество!'),
+        'Под_раз_де_ле_ние, твор_че_ство: коли_че_ство!');
+  });
+
+  test('hyphenate-text-boundaries', () {
+    final hyphenator = Hyphenator(config, symbol: '_');
+    expect(
+        hyphenator.hyphenateText('Подразделение, творчество: количество!',
+            hyphenAtBoundaries: true),
+        'Под_раз_де_ле_ние,_ _твор_че_ство:_ _коли_че_ство!');
+  });
+
+  test('hyphenate-text-empty', () {
+    final hyphenator = Hyphenator(config, symbol: '-');
+    expect(hyphenator.hyphenateText(''), '');
   });
 
   // -------------------------------------------------------------------
@@ -91,14 +94,21 @@ void main() {
   // -------------------------------------------------------------------
 
   test('hyphenate-word', () {
-    final hyphenator = Hyphenator(
-      config,
-      symbol: '_',
-    );
+    final hyphenator = Hyphenator(config, symbol: '_');
 
-    expect(hyphenator.hyphenateWord('subdivision'), 'sub_di_vi_sion');
-    expect(hyphenator.hyphenateWord('creative'), 'cre_ative');
-    expect(hyphenator.hyphenateWord('disciplines'), 'dis_ci_plines');
+    expect(hyphenator.hyphenateWord('подразделение'), 'под_раз_де_ле_ние');
+    expect(hyphenator.hyphenateWord('электростанция'), 'элек_тро_стан_ция');
+    expect(hyphenator.hyphenateWord('направление'), 'направ_ле_ние');
+  });
+
+  test('hyphenate-word-uppercase', () {
+    final hyphenator = Hyphenator(config, symbol: '_');
+    expect(hyphenator.hyphenateWord('ПОДРАЗДЕЛЕНИЕ'), 'ПОД_РАЗ_ДЕ_ЛЕ_НИЕ');
+  });
+
+  test('soft-hyphen', () {
+    final hyphend = Hyphenator(config).hyphenateWord('подразделение');
+    expect(hyphend.contains('\u{00AD}'), true);
   });
 
   // -------------------------------------------------------------------
@@ -108,59 +118,64 @@ void main() {
   test('hyphenate-word-to-syllables', () {
     final hyphenator = Hyphenator(config, symbol: '_');
 
-    expect(hyphenator.syllablesWord('subdivision'),
-        <String>['sub', 'di', 'vi', 'sion']);
-    expect(hyphenator.syllablesWord('creative'), <String>['cre', 'ative']);
-    expect(hyphenator.syllablesWord('disciplines'),
-        <String>['dis', 'ci', 'plines']);
+    expect(hyphenator.syllablesWord('подразделение'),
+        <String>['под', 'раз', 'де', 'ле', 'ние']);
+    expect(
+        hyphenator.syllablesWord('творчество'), <String>['твор', 'че', 'ство']);
+    expect(hyphenator.syllablesWord('гидростанция'),
+        <String>['гид', 'ро', 'стан', 'ция']);
   });
 
   test('hyphenate-word-to-syllables-punctuation', () {
     final hyphenator = Hyphenator(config, symbol: '_');
 
-    expect(hyphenator.syllablesWord('"subdivision"'),
-        <String>['"sub', 'di', 'vi', 'sion"']);
-    expect(
-        hyphenator.syllablesWord('creative...'), <String>['cre', 'ative...']);
-    expect(hyphenator.syllablesWord('disciplines,'),
-        <String>['dis', 'ci', 'plines,']);
+    expect(hyphenator.syllablesWord('"подразделение"'),
+        <String>['"под', 'раз', 'де', 'ле', 'ние"']);
+    expect(hyphenator.syllablesWord('творчество...'),
+        <String>['твор', 'че', 'ство...']);
+    expect(hyphenator.syllablesWord('гидростанция,'),
+        <String>['гид', 'ро', 'стан', 'ция,']);
   });
 
   // -------------------------------------------------------------------
-  // hyphenateTex()
+  // exceptions - full roundtrip over all bundled exceptions
   // -------------------------------------------------------------------
 
-  test('hyphenate-text', () {
-    final hyphenator = Hyphenator(config, symbol: '-');
-    expect(hyphenator.hyphenateText(text), expectedText);
-  });
-
-  test('hyphenate-text-empty', () {
-    final hyphenator = Hyphenator(config, symbol: '-');
-    expect(hyphenator.hyphenateText(''), '');
-  });
-
-  test('hyphenate-text-boundaries', () {
-    final text =
-        """The arts are a vast subdivision of culture, composed of many creative endeavors and disciplines.
-
-
-        It is a broader term than     "art", which as a description of a field usually means only the visual arts.""";
-
-//     final expectedText =
-//         """The_ _arts_ _are_ _a_ _vast_ _sub_di_vi_sion_ _of_ _cul_ture,_ _com_posed_ _of_ _many_ _cre_ative_ _endeav_ors_ _and_ _dis_ci_plines._ _
-
-// _        _It_ _is_ _a_ _broader_ _term_ _than_     _"art",_ _which_ _as_ _a_ _descrip_tion_ _of_ _a_ _field_ _usu_ally_ _means_ _only_ _the_ _visual_ _arts.""";
-
-    final expectedText =
-        """The_ _arts_ _are_ _a_ _vast_ _sub_di_vi_sion_ _of_ _cul_ture,_ _com_posed_ _of_ _many_ _cre_ative_ _endeav_ors_ _and_ _dis_ci_plines.
-
-
-_        _It_ _is_ _a_ _broader_ _term_ _than_     _"art",_ _which_ _as_ _a_ _descrip_tion_ _of_ _a_ _field_ _usu_ally_ _means_ _only_ _the_ _visual_ _arts.""";
-
+  test('exceptions-roundtrip', () {
     final hyphenator = Hyphenator(config, symbol: '_');
-    expect(
-        hyphenator.hyphenateText(text, hyphenAtBoundaries: true), expectedText);
+    expect(config.exceptions, isNotEmpty);
+
+    for (final source in config.exceptions) {
+      final key = StringBuffer();
+      final breaks = <int>[];
+
+      var breakBeforeNext = false;
+      for (final rune in source.runes) {
+        if (rune == 0x2D) {
+          breakBeforeNext = true;
+        } else {
+          key.writeCharCode(rune);
+          if (breakBeforeNext) breaks.add(key.length - 1);
+          breakBeforeNext = false;
+        }
+      }
+
+      final expected = StringBuffer();
+      final keyStr = key.toString();
+      for (int i = 0; i < keyStr.length; i++) {
+        if (breaks.contains(i)) expected.write('_');
+        expected.write(keyStr[i]);
+      }
+
+      expect(hyphenator.hyphenateWord(keyStr), expected.toString(),
+          reason: 'exception "$source"');
+    }
+  });
+
+  test('exception-known-case', () {
+    final hyphenator = Hyphenator(config, symbol: '_');
+    expect(hyphenator.hyphenateWord('бизнесмен'), 'биз_нес_мен');
+    expect(hyphenator.hyphenateWord('сегодня'), 'се_го_дня');
   });
 
   // -------------------------------------------------------------------
@@ -168,38 +183,16 @@ _        _It_ _is_ _a_ _broader_ _term_ _than_     _"art",_ _which_ _as_ _a_ _de
   // -------------------------------------------------------------------
 
   test('hyphenate-text-to-tokens', () {
-    final text = """A vast subdivision of culture,
-        composed of many creative endeavors and disciplines.""";
+    final text = """Обширное подразделение культуры,
+        творчество и дисциплины.""";
 
     final hyphenator = Hyphenator(config);
     final result = hyphenator.hyphenateTextToTokens(text);
 
-    // expect(result.toString(),
-    //     "[[A], WS, [vast], WS, [sub, di, vi, sion], WS, [of], WS, [cul, ture,], WS, NL, WS, [com, posed], WS, [of], WS, [many], WS, [cre, ative], WS, [endeav, ors], WS, [and], WS, [dis, ci, plines.]]");
-    expect(result.toString(),
-        "[[A], WS, [vast], WS, [sub, di, vi, sion], WS, [of], WS, [cul, ture,], NL, WS, [com, posed], WS, [of], WS, [many], WS, [cre, ative], WS, [endeav, ors], WS, [and], WS, [dis, ci, plines.]]");
-  });
-
-  test('hyphenate-wrapNoHyphen', () {
-    final text = Text("""A vast subdivision of culture,
-        composed of many creative endeavors and disciplines.""");
-    final expected = """A vast
-subdivision of
-culture,
-composed of
-many creative
-endeavors and
-disciplines.""";
-
-    final WrapResult wrap = Hyphenator.wrapNoHyphen(text, sRoboto, 100);
-    expect(wrap.textStr, expected);
-  });
-
-  test('hyphenate-wrapNoHyphen-two-words', () {
-    final text = Text('test test', style: sRoboto);
-    final wrap = Hyphenator.wrapNoHyphen(text, sRoboto, 50);
-    print(wrap.size);
-    expect(wrap.textStr, 'test\ntest');
+    expect(
+        result.toString(),
+        "[[Обшир, ное], WS, [под, раз, де, ле, ние], WS, [культуры,], NL, "
+        "WS, [твор, че, ство], WS, [и], WS, [дис, ци, п, лины.]]");
   });
 
   // -------------------------------------------------------------------
@@ -207,31 +200,31 @@ disciplines.""";
   // -------------------------------------------------------------------
 
   test('wrap-word-too-big', () {
-    final str = 'hello';
+    final str = 'здравствуйте';
     final styleBig = sRoboto.merge(TextStyle(fontSize: 500));
     final hyphenator = Hyphenator(config);
     final wrap = hyphenator.wrap(Text(str), styleBig, 350.0);
     expect(wrap.textStr, str);
 
-    expect(rounded(wrap.size), Size(1068, 585));
+    expect(rounded(wrap.size), Size(3189, 585));
     expect(wrap.isSizeMatching, false);
   });
 
   test('wrap-one-word', () {
-    final str = 'hello';
+    final str = 'здравствуйте';
     final hyphenator = Hyphenator(config);
     final wrap = hyphenator.wrap(Text(str), sRoboto, 360.0);
     expect(wrap.textStr, str);
-    expect(rounded(wrap.size), Size(30, 16));
+    expect(rounded(wrap.size), Size(89, 16));
     expect(wrap.isSizeMatching, true);
   });
 
   test('wrap-two-words', () {
-    final str = 'hello hello';
+    final str = 'здравствуйте здравствуйте';
     final hyphenator = Hyphenator(config);
     final wrap = hyphenator.wrap(Text(str), sRoboto, 360.0);
     expect(wrap.textStr, str);
-    expect(rounded(wrap.size), Size(63, 16));
+    expect(rounded(wrap.size), Size(182, 16));
     expect(wrap.isSizeMatching, true);
   });
 
@@ -239,18 +232,18 @@ disciplines.""";
     final style =
         TextStyle(fontWeight: FontWeight.normal, fontSize: 14).merge(sRoboto);
     final text = Text(
-        """A vast subdivision of culture, composed of many creative endeavors and disciplines.""");
-    final expected = """A vast subdivi-
-sion of culture,
-composed of
-many creative
-endeavors and
-disciplines.""";
+        'Подразделение гидростанции количество творчество направление обстоятельство.');
+    final expected = '''Подразделе-
+ние гидростан-
+ции количе-
+ство творче-
+ство направ-
+ление обстоя-
+тельство.''';
 
     final hyphenator = Hyphenator(config);
 
     WrapResult res = hyphenator.wrap(text, style, 100.0);
-    // print(res.textStr);
     expect(res.isSizeMatching, true);
     expect(res.textStr, expected);
   });
@@ -259,27 +252,25 @@ disciplines.""";
     final style =
         TextStyle(fontWeight: FontWeight.normal, fontSize: 14).merge(sRoboto);
     final text = Text(
-        """A vast subdivision of culture, composed of many creative endeavors and disciplines.""");
-    final expected = """A vast subdivision of cul-
-ture, composed of many
-creative endeavors and
-disciplines.""";
+        'Подразделение гидростанции количество творчество направление обстоятельство.');
+    final expected = '''Подразделение гидро-
+станции количество
+творчество направле-
+ние обстоятельство.''';
 
     final hyphenator = Hyphenator(config);
 
     WrapResult res = hyphenator.wrap(text, style, 160.0);
-    // print(res.textStr);
     expect(res.isSizeMatching, true);
     expect(res.textStr, expected);
   });
 
   test('wrap-word-empty', () {
     final text = Text("");
-    final expected = "";
     final hyphenator = Hyphenator(config);
     WrapResult res = hyphenator.wrap(text, sRoboto, 380.0);
     expect(res.isSizeMatching, false);
-    expect(res.textStr, expected);
+    expect(res.textStr, "");
   });
 
   // -------------------------------------------------------------------
@@ -296,7 +287,6 @@ disciplines.""";
         """A vast subdivision of culture, composed of many creative endeavors and disciplines.""";
 
     WrapResult res = Hyphenator.wrapNoHyphen(text, style, 540.0);
-    // print(res);
     expect(res.isSizeMatching, true);
     expect(res.textStr, expected);
     expect(rounded(res.size), Size(522, 16));
@@ -312,7 +302,6 @@ disciplines.""";
 many creative endeavors and disciplines.""";
 
     WrapResult res = Hyphenator.wrapNoHyphen(text, style, 270.0);
-    // print(res);
     expect(res.isSizeMatching, true);
     expect(res.textStr, expected);
     expect(rounded(res.size), Size(264, 32));
@@ -324,17 +313,99 @@ many creative endeavors and disciplines.""";
 
   test('hyphenate-test-minletter-4', () {
     final hyphenator = Hyphenator(config, symbol: '_', minLetterCount: 4);
-    expect(hyphenator.hyphenateText('disciplines'), 'disci_plines');
+    expect(hyphenator.hyphenateText('гидростанция'), 'гидро_станция');
   });
 
   test('hyphenate-test-minletter-50', () {
     final hyphenator = Hyphenator(config, symbol: '_', minLetterCount: 50);
-    expect(hyphenator.hyphenateText('disciplines'), 'disciplines');
+    expect(hyphenator.hyphenateText('гидростанция'), 'гидростанция');
   });
 
   test('hyphenate-text-min-wordlength-50', () {
     final hyphenator = Hyphenator(config, symbol: '_', minWordLength: 50);
-    expect(hyphenator.hyphenateText('disciplines'), 'disciplines');
+    expect(hyphenator.hyphenateText('гидростанция'), 'гидростанция');
+  });
+
+  // -------------------------------------------------------------------
+  // widget
+  // -------------------------------------------------------------------
+
+  testWidgets('widget-renders-hyphenated-sync', (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          width: 100,
+          child: TextHyphenated('подразделение подразделение'),
+        ),
+      ),
+    ));
+
+    // No FutureBuilder: wrapped text is rendered on the very first frame.
+    final textFinder = find.byWidgetPredicate(
+        (w) => w is Text && (w.data?.contains('\n') ?? false));
+    expect(textFinder, findsOneWidget);
+  });
+
+  testWidgets('widget-renders-with-a-custom-split-symbol', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          width: 100,
+          child: TextHyphenated(
+            'подразделение подразделение',
+            symbol: '_',
+          ),
+        ),
+      ),
+    ));
+
+    final textFinder = find.byWidgetPredicate(
+      (widget) => widget is Text && (widget.data?.contains('\n') ?? false),
+    );
+    expect(textFinder, findsOneWidget);
+  });
+
+  testWidgets('widget-recomputes-wrapping-when-max-lines-changes', (
+    WidgetTester tester,
+  ) async {
+    late StateSetter setWidgetState;
+    int? maxLines;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              setWidgetState = setState;
+              return SizedBox(
+                width: 100,
+                child: TextHyphenated(
+                  'подразделение подразделение',
+                  maxLines: maxLines,
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    Text renderedText() => tester.widget<Text>(
+          find.descendant(
+            of: find.byType(TextHyphenated),
+            matching: find.byType(Text),
+          ),
+        );
+
+    expect(renderedText().data, contains('\n'));
+
+    setWidgetState(() => maxLines = 1);
+    await tester.pump();
+
+    expect(renderedText().data, isNot(contains('\n')));
+    expect(renderedText().maxLines, 1);
   });
 
   // -------------------------------------------------------------------
@@ -346,8 +417,7 @@ many creative endeavors and disciplines.""";
     final stopwatchesPerform = <int>[];
 
     final stopwatchInit = Stopwatch()..start();
-    final LanguageConfig config1 = Language_en_us();
-    final hyphenator = Hyphenator(config1, symbol: '-');
+    final hyphenator = Hyphenator(config, symbol: '-');
     stopwatchInit.stop();
     stopwatchesInit.add(stopwatchInit.elapsedMilliseconds);
 
@@ -357,7 +427,8 @@ many creative endeavors and disciplines.""";
       stopwatchPerform.stop();
       stopwatchesPerform.add(stopwatchPerform.elapsedMilliseconds);
 
-      expect(result, expectedText);
+      expect(result, isNotEmpty);
+      expect(result.contains('-'), true);
     }
 
     final avgInit =

@@ -11,11 +11,7 @@ class TextHelper {
       locale: t.locale,
       softWrap: t.softWrap,
       overflow: t.overflow,
-      // Android has scaling larger than 1.0 set,
-      // thus the measurements appear to be not right
-      // if this is not 1.0 and consumd?
-      // textScaleFactor: 1.0,
-      textScaleFactor: t.textScaleFactor,
+      textScaler: t.textScaler,
       maxLines: t.maxLines,
       semanticsLabel: t.semanticsLabel,
       textWidthBasis: t.textWidthBasis,

@@ -14,13 +14,10 @@ dependencies:
   cupertino_icons: ^1.0.2
   hyphenatorx: 
     path: ../../
-  google_fonts: ^4.0.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  flutter_lints: ^2.0.0
 
 flutter:
 

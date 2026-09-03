@@ -13,11 +13,13 @@ class WordToken extends TextPartToken {
   List<WordPartToken> parts;
   WordToken(this.parts);
 
-  toString() => parts.map((e) => e.toString()).toList().toString();
+  @override
+  String toString() => parts.map((e) => e.toString()).toList().toString();
+  @override
   String render() => parts.map((e) => e.render()).join();
 
   @override
-  Size get sizeCurrent {
+  Size? get sizeCurrent {
     double w = 0;
     double h = 0;
 
@@ -27,6 +29,12 @@ class WordToken extends TextPartToken {
     }
 
     return Size(w, h);
+  }
+
+  @override
+  set sizeCurrent(Size? value) {
+    // The size of a WordToken is computed from its parts,
+    // a stored value is ignored.
   }
 }
 
