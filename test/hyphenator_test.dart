@@ -1,10 +1,10 @@
 import 'dart:math' as Math show min, max;
 
-import 'package:flutter/material.dart';
+import 'package:hyphenatorx/languages/language_ru.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
-import 'package:hyphenatorx/languages/language_en_us.dart';
 import 'package:hyphenatorx/languages/languageconfig.dart';
 import 'package:hyphenatorx/token/wrapresult.dart';
 
@@ -16,7 +16,7 @@ final expectedText =
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final LanguageConfig config = Language_en_us();
+  final LanguageConfig config = Language_ru();
   late TextStyle sRoboto;
 
   setUpAll(() async {
@@ -61,8 +61,10 @@ void main() {
   // -------------------------------------------------------------------
 
   test('loadAsync', () async {
-    final hyphenator =
-        await Hyphenator.loadAsync(Language.language_en_us, symbol: '_');
+    final hyphenator = await Hyphenator.loadAsync(
+      Language.language_en_us,
+      symbol: '_',
+    );
     expect(hyphenator.hyphenateText('subdivision'), 'sub_di_vi_sion');
     expect(hyphenator.hyphenateText('creative'), 'cre_ative');
     expect(hyphenator.hyphenateText('disciplines'), 'dis_ci_plines');
@@ -91,10 +93,7 @@ void main() {
   // -------------------------------------------------------------------
 
   test('hyphenate-word', () {
-    final hyphenator = Hyphenator(
-      config,
-      symbol: '_',
-    );
+    final hyphenator = Hyphenator(config, symbol: '_');
 
     expect(hyphenator.hyphenateWord('subdivision'), 'sub_di_vi_sion');
     expect(hyphenator.hyphenateWord('creative'), 'cre_ative');
@@ -108,22 +107,38 @@ void main() {
   test('hyphenate-word-to-syllables', () {
     final hyphenator = Hyphenator(config, symbol: '_');
 
-    expect(hyphenator.syllablesWord('subdivision'),
-        <String>['sub', 'di', 'vi', 'sion']);
+    expect(hyphenator.syllablesWord('subdivision'), <String>[
+      'sub',
+      'di',
+      'vi',
+      'sion',
+    ]);
     expect(hyphenator.syllablesWord('creative'), <String>['cre', 'ative']);
-    expect(hyphenator.syllablesWord('disciplines'),
-        <String>['dis', 'ci', 'plines']);
+    expect(hyphenator.syllablesWord('disciplines'), <String>[
+      'dis',
+      'ci',
+      'plines',
+    ]);
   });
 
   test('hyphenate-word-to-syllables-punctuation', () {
     final hyphenator = Hyphenator(config, symbol: '_');
 
-    expect(hyphenator.syllablesWord('"subdivision"'),
-        <String>['"sub', 'di', 'vi', 'sion"']);
-    expect(
-        hyphenator.syllablesWord('creative...'), <String>['cre', 'ative...']);
-    expect(hyphenator.syllablesWord('disciplines,'),
-        <String>['dis', 'ci', 'plines,']);
+    expect(hyphenator.syllablesWord('"subdivision"'), <String>[
+      '"sub',
+      'di',
+      'vi',
+      'sion"',
+    ]);
+    expect(hyphenator.syllablesWord('creative...'), <String>[
+      'cre',
+      'ative...',
+    ]);
+    expect(hyphenator.syllablesWord('disciplines,'), <String>[
+      'dis',
+      'ci',
+      'plines,',
+    ]);
   });
 
   // -------------------------------------------------------------------
@@ -147,10 +162,10 @@ void main() {
 
         It is a broader term than     "art", which as a description of a field usually means only the visual arts.""";
 
-//     final expectedText =
-//         """The_ _arts_ _are_ _a_ _vast_ _sub_di_vi_sion_ _of_ _cul_ture,_ _com_posed_ _of_ _many_ _cre_ative_ _endeav_ors_ _and_ _dis_ci_plines._ _
+    //     final expectedText =
+    //         """The_ _arts_ _are_ _a_ _vast_ _sub_di_vi_sion_ _of_ _cul_ture,_ _com_posed_ _of_ _many_ _cre_ative_ _endeav_ors_ _and_ _dis_ci_plines._ _
 
-// _        _It_ _is_ _a_ _broader_ _term_ _than_     _"art",_ _which_ _as_ _a_ _descrip_tion_ _of_ _a_ _field_ _usu_ally_ _means_ _only_ _the_ _visual_ _arts.""";
+    // _        _It_ _is_ _a_ _broader_ _term_ _than_     _"art",_ _which_ _as_ _a_ _descrip_tion_ _of_ _a_ _field_ _usu_ally_ _means_ _only_ _the_ _visual_ _arts.""";
 
     final expectedText =
         """The_ _arts_ _are_ _a_ _vast_ _sub_di_vi_sion_ _of_ _cul_ture,_ _com_posed_ _of_ _many_ _cre_ative_ _endeav_ors_ _and_ _dis_ci_plines.
@@ -160,7 +175,9 @@ _        _It_ _is_ _a_ _broader_ _term_ _than_     _"art",_ _which_ _as_ _a_ _de
 
     final hyphenator = Hyphenator(config, symbol: '_');
     expect(
-        hyphenator.hyphenateText(text, hyphenAtBoundaries: true), expectedText);
+      hyphenator.hyphenateText(text, hyphenAtBoundaries: true),
+      expectedText,
+    );
   });
 
   // -------------------------------------------------------------------
@@ -176,8 +193,10 @@ _        _It_ _is_ _a_ _broader_ _term_ _than_     _"art",_ _which_ _as_ _a_ _de
 
     // expect(result.toString(),
     //     "[[A], WS, [vast], WS, [sub, di, vi, sion], WS, [of], WS, [cul, ture,], WS, NL, WS, [com, posed], WS, [of], WS, [many], WS, [cre, ative], WS, [endeav, ors], WS, [and], WS, [dis, ci, plines.]]");
-    expect(result.toString(),
-        "[[A], WS, [vast], WS, [sub, di, vi, sion], WS, [of], WS, [cul, ture,], NL, WS, [com, posed], WS, [of], WS, [many], WS, [cre, ative], WS, [endeav, ors], WS, [and], WS, [dis, ci, plines.]]");
+    expect(
+      result.toString(),
+      "[[A], WS, [vast], WS, [sub, di, vi, sion], WS, [of], WS, [cul, ture,], NL, WS, [com, posed], WS, [of], WS, [many], WS, [cre, ative], WS, [endeav, ors], WS, [and], WS, [dis, ci, plines.]]",
+    );
   });
 
   test('hyphenate-wrapNoHyphen', () {
@@ -236,10 +255,13 @@ disciplines.""";
   });
 
   test('wrap-multiple-words-100-width', () {
-    final style =
-        TextStyle(fontWeight: FontWeight.normal, fontSize: 14).merge(sRoboto);
+    final style = TextStyle(
+      fontWeight: FontWeight.normal,
+      fontSize: 14,
+    ).merge(sRoboto);
     final text = Text(
-        """A vast subdivision of culture, composed of many creative endeavors and disciplines.""");
+      """A vast subdivision of culture, composed of many creative endeavors and disciplines.""",
+    );
     final expected = """A vast subdivi-
 sion of culture,
 composed of
@@ -256,10 +278,13 @@ disciplines.""";
   });
 
   test('wrap-multiple-words-160-width', () {
-    final style =
-        TextStyle(fontWeight: FontWeight.normal, fontSize: 14).merge(sRoboto);
+    final style = TextStyle(
+      fontWeight: FontWeight.normal,
+      fontSize: 14,
+    ).merge(sRoboto);
     final text = Text(
-        """A vast subdivision of culture, composed of many creative endeavors and disciplines.""");
+      """A vast subdivision of culture, composed of many creative endeavors and disciplines.""",
+    );
     final expected = """A vast subdivision of cul-
 ture, composed of many
 creative endeavors and
@@ -287,11 +312,14 @@ disciplines.""";
   // -------------------------------------------------------------------
 
   test('no-wrap-multiple-words-540-width', () {
-    final style =
-        TextStyle(fontWeight: FontWeight.normal, fontSize: 14).merge(sRoboto);
+    final style = TextStyle(
+      fontWeight: FontWeight.normal,
+      fontSize: 14,
+    ).merge(sRoboto);
     final text = Text(
-        """A vast subdivision of culture, composed of many creative endeavors and disciplines.""",
-        maxLines: 1);
+      """A vast subdivision of culture, composed of many creative endeavors and disciplines.""",
+      maxLines: 1,
+    );
     final expected =
         """A vast subdivision of culture, composed of many creative endeavors and disciplines.""";
 
@@ -303,11 +331,14 @@ disciplines.""";
   });
 
   test('no-wrap-multiple-words-270-width', () {
-    final style =
-        TextStyle(fontWeight: FontWeight.normal, fontSize: 14).merge(sRoboto);
+    final style = TextStyle(
+      fontWeight: FontWeight.normal,
+      fontSize: 14,
+    ).merge(sRoboto);
     final text = Text(
-        """A vast subdivision of culture, composed of many creative endeavors and disciplines.""",
-        maxLines: 2);
+      """A vast subdivision of culture, composed of many creative endeavors and disciplines.""",
+      maxLines: 2,
+    );
     final expected = """A vast subdivision of culture, composed of
 many creative endeavors and disciplines.""";
 
@@ -346,7 +377,7 @@ many creative endeavors and disciplines.""";
     final stopwatchesPerform = <int>[];
 
     final stopwatchInit = Stopwatch()..start();
-    final LanguageConfig config1 = Language_en_us();
+    final LanguageConfig config1 = Language_ru();
     final hyphenator = Hyphenator(config1, symbol: '-');
     stopwatchInit.stop();
     stopwatchesInit.add(stopwatchInit.elapsedMilliseconds);

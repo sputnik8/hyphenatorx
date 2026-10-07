@@ -1,6 +1,6 @@
 import 'dart:core';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:hyphenatorx/src/extensions.dart';
 
 import 'languages/languageconfig.dart';
@@ -86,11 +86,16 @@ class Hyphenator {
       throw 'minWordLength must be > 0';
     }
 
-    final patterns = config.data['pattern']
-        .map<Pattern>((pattern) => Pattern(
-            pattern['result'] as String, List<int>.from(pattern['levels'])))
-        .toList()
-      ..sort();
+    final patterns =
+        config.data['pattern']
+            .map<Pattern>(
+              (pattern) => Pattern(
+                pattern['result'] as String,
+                List<int>.from(pattern['levels']),
+              ),
+            )
+            .toList()
+          ..sort();
 
     final Map<String, List<int>> exceptions = {};
 
@@ -104,14 +109,20 @@ class Hyphenator {
     if (config.data['exception'] is Map &&
         (config.data['exception'] as Map).isNotEmpty) {
       exceptions.addEntries(
-        (config.data['exception'] as Map<String, dynamic>)
-            .entries
-            .map((entry) => MapEntry(entry.key, List<int>.from(entry.value))),
+        (config.data['exception'] as Map<String, dynamic>).entries.map(
+          (entry) => MapEntry(entry.key, List<int>.from(entry.value)),
+        ),
       );
     }
 
     calc = CalculationHelper(
-        patterns, exceptions, minLetterCount, minWordLength, symbol, hyphen);
+      patterns,
+      exceptions,
+      minLetterCount,
+      minWordLength,
+      symbol,
+      hyphen,
+    );
   }
 
   /// Returns cached and hyphenated words.
@@ -126,18 +137,27 @@ class Hyphenator {
   /// [WrapResult] holds a [Text] with the correctly hyphened [String].
   WrapResult wrap(final Text text, final TextStyle style, final maxWidth) {
     final tokens = hyphenateTextToTokens(text.data!);
-    final wrapper =
-        LineWrapperHyphen(tokens, text, style, maxWidth, calc.hyphen);
+    final wrapper = LineWrapperHyphen(
+      tokens,
+      text,
+      style,
+      maxWidth,
+      calc.hyphen,
+    );
     return wrapper.render();
   }
 
   /// Service method to wrap a text and NOT perform hyphenation.
   static WrapResult wrapNoHyphen(
-      final Text text, final TextStyle style, final double maxWidth) {
+    final Text text,
+    final TextStyle style,
+    final double maxWidth,
+  ) {
     final List<TextPartToken> tokens = [];
 
-    final List<String> parts =
-        text.data!.replaceAll(reR, '').splitWithDelim(_split);
+    final List<String> parts = text.data!
+        .replaceAll(reR, '')
+        .splitWithDelim(_split);
 
     for (final part in parts) {
       if (part.isEmpty) {
@@ -190,10 +210,14 @@ class Hyphenator {
         tokens.add(TabsAndSpacesToken(part));
       } else {
         // Word
-        tokens.add(WordToken(part
-            .split(calc.symbol)
-            .map<WordPartToken>((e) => WordPartToken(e))
-            .toList(growable: false)));
+        tokens.add(
+          WordToken(
+            part
+                .split(calc.symbol)
+                .map<WordPartToken>((e) => WordPartToken(e))
+                .toList(growable: false),
+          ),
+        );
       }
     }
 

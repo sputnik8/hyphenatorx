@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:hyphenatorx/hyphenatorx.dart';
 
 class TextHyphenated extends StatefulWidget {
@@ -22,24 +22,27 @@ class TextHyphenated extends StatefulWidget {
   //
   final bool doShowDebug;
 
-  const TextHyphenated(this.text, this.language,
-      {this.symbol = '\u{00AD}',
-      this.style,
-      this.textKey,
-      this.strutStyle,
-      this.textAlign,
-      this.textDirection,
-      this.locale,
-      this.softWrap,
-      this.overflow,
-      this.textScaleFactor,
-      this.maxLines,
-      this.semanticsLabel,
-      this.textWidthBasis,
-      this.textHeightBehavior,
-      this.selectionColor,
-      Key? super.key,
-      this.doShowDebug = false});
+  const TextHyphenated(
+    this.text,
+    this.language, {
+    this.symbol = '\u{00AD}',
+    this.style,
+    this.textKey,
+    this.strutStyle,
+    this.textAlign,
+    this.textDirection,
+    this.locale,
+    this.softWrap,
+    this.overflow,
+    this.textScaleFactor,
+    this.maxLines,
+    this.semanticsLabel,
+    this.textWidthBasis,
+    this.textHeightBehavior,
+    this.selectionColor,
+    Key? super.key,
+    this.doShowDebug = false,
+  });
 
   @override
   _TextHyphenatedState createState() => _TextHyphenatedState();
@@ -51,8 +54,10 @@ class _TextHyphenatedState extends State<TextHyphenated> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _future =
-        Hyphenator.loadAsyncByAbbr(widget.language, symbol: widget.symbol);
+    _future = Hyphenator.loadAsyncByAbbr(
+      widget.language,
+      symbol: widget.symbol,
+    );
   }
 
   @override
@@ -66,26 +71,32 @@ class _TextHyphenatedState extends State<TextHyphenated> {
           throw snapshot.error!;
         }
 
-        return LayoutBuilder(builder: (ctx, cnt) {
-          final txt = _makeText(widget.text);
-          final defaultStyle =
-              widget.style != null ? widget.style! : TextStyle();
-          final wrapped = snapshot.data!.wrap(txt, defaultStyle, cnt.maxWidth);
+        return LayoutBuilder(
+          builder: (ctx, cnt) {
+            final txt = _makeText(widget.text);
+            final defaultStyle = widget.style != null
+                ? widget.style!
+                : TextStyle();
+            final wrapped = snapshot.data!.wrap(
+              txt,
+              defaultStyle,
+              cnt.maxWidth,
+            );
 
-          final wrappedText = _makeText(wrapped.textStr);
+            final wrappedText = _makeText(wrapped.textStr);
 
-          if (widget.doShowDebug == false) {
-            return wrappedText;
-          } else {
-            // print(wrapped.sizeByText);
-            return Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Positioned(child: wrappedText),
-                Positioned(
-                  right: 0,
-                  bottom: -80,
-                  child: Container(
+            if (widget.doShowDebug == false) {
+              return wrappedText;
+            } else {
+              // print(wrapped.sizeByText);
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(child: wrappedText),
+                  Positioned(
+                    right: 0,
+                    bottom: -80,
+                    child: Container(
                       color: wrapped.isSizeMatching
                           ? Colors.green.withAlpha(200)
                           : Colors.red.withAlpha(200),
@@ -93,23 +104,30 @@ class _TextHyphenatedState extends State<TextHyphenated> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                              'is-match: ' + wrapped.isSizeMatching.toString()),
-                          Text('size-text : ' +
-                              wrapped.debugSizeByText.width.toString() +
-                              '/' +
-                              wrapped.debugSizeByText.height.toString()),
-                          Text('size-paint: ' +
-                              wrapped.size.width.toString() +
-                              '/' +
-                              wrapped.size.height.toString()),
+                            'is-match: ' + wrapped.isSizeMatching.toString(),
+                          ),
+                          Text(
+                            'size-text : ' +
+                                wrapped.debugSizeByText.width.toString() +
+                                '/' +
+                                wrapped.debugSizeByText.height.toString(),
+                          ),
+                          Text(
+                            'size-paint: ' +
+                                wrapped.size.width.toString() +
+                                '/' +
+                                wrapped.size.height.toString(),
+                          ),
                           Text('max-width: ' + wrapped.maxWidth.toString()),
                         ],
-                      )),
-                ),
-              ],
-            );
-          }
-        });
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
+        );
       },
     );
   }
